@@ -1,0 +1,146 @@
+
+.game-screen {
+  min-height: 100vh;
+  padding: 24px;
+  color: #f2f5ff;
+  background: #050711;
+  font-family: Arial, sans-serif;
+}
+
+.game-header {
+  max-width: 1000px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.game-header h2 {
+  font-size: 16px;
+  color: #50e8ff;
+}
+
+.game-back {
+  padding: 10px 14px;
+  border: 1px solid #394663;
+  border-radius: 4px;
+  background: #101528;
+  color: #f2f5ff;
+  cursor: pointer;
+}
+
+.game-hud {
+  display: flex;
+  flex-wrap:wrap;
+  gap: 16px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.game-hud span{
+    white-space:nowrap;
+}
+
+.game-hud span:nth-child(2){
+    color:#50e8ff;
+}
+
+.game-hud span:last-child {
+  color: #ff6686;
+}
+
+.canvas-wrapper {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid #33415f;
+  box-shadow: 0 0 35px #50e8ff14;
+}
+
+.canvas-wrapper canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.game-over {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  background: #050711eF;
+  text-align: center;
+}
+
+.game-over h2 {
+  color: #ff5478;
+  font-size: clamp(24px, 5vw, 40px);
+}
+
+.game-over p {
+  font-size: 20px;
+}
+
+.game-over button {
+  min-width: 150px;
+  padding: 12px 18px;
+  border: 1px solid #50e8ff;
+  background: #50e8ff;
+  color: #050711;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.game-over .game-back {
+  background: transparent;
+  color: #f2f5ff;
+  border-color: #394663;
+}
+
+.game-tip {
+  max-width: 1000px;
+  margin: 16px auto;
+  color: #98a6c6;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .game-screen {
+    padding: 12px;
+  }
+
+  .game-header {
+    justify-content: center;
+  }
+
+  .game-header h2 {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+
+.active-powerups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.powerup-badge {
+  padding: 6px 12px;
+  border: 1px solid #45d9ff;
+  border-radius: 20px;
+  background: rgba(69, 217, 255, 0.12);
+  color: #45d9ff;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
