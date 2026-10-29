@@ -649,12 +649,10 @@ powerups = powerups.filter((powerup) => {
   const type = powerup.type
 
   if (type === 'healthRestore') {
-    health = Math.min(health + 1, 3)
-    setHealth(health)
-  } else if (type === 'extraLife') {
-    lives = Math.min(lives + 1, 5)
-    setHealth(lives)
-  } else if (type === 'bomb') {
+  setHealth((prevHealth) => Math.min(prevHealth + 1, 3))
+} else if (type === 'extraLife') {
+  lives = Math.min(lives + 1, 5)
+} else if (type === 'bomb') {
     points += enemies.reduce(
       (total, enemy) =>
         total + (ENEMY_TYPES[enemy.type]?.points ?? 0),
