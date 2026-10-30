@@ -1,6 +1,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import './Game.css'
+import { missions } from './data/missions'
+import { GAME_CONFIG } from './config/gameConfig'
 
 const WIDTH = 900
 const HEIGHT = 560
@@ -93,13 +95,11 @@ const POWERUP_TYPES = {
   },
 }
 
-
-
 const BOSS_CONFIG = {
   name: 'VOID DESTROYER',
   color: '#ff245c',
   radius: 48,
-  maxHealth: 100,
+  maxHealth: GAME_CONFIG.bosses.boss1Health,
   speed: 1.5,
   points: 500,
 }
@@ -108,7 +108,7 @@ const BOSS2_CONFIG = {
   name: 'SHADOW REAPER',
   color: '#bc83ff',
   radius: 55,
-  maxHealth: 160,
+  maxHealth: GAME_CONFIG.bosses.boss2Health,
   speed: 2.2,
   points: 800,
 }
@@ -118,7 +118,7 @@ const BOSS3_CONFIG = {
   name: 'INFERNO TITAN',
   color: '#ff8c42',
   radius: 62,
-  maxHealth: 220,
+  maxHealth: GAME_CONFIG.bosses.boss3Health,
   speed: 1.8,
   points: 1200,
 }
@@ -128,7 +128,7 @@ const BOSS4_CONFIG = {
   name: 'FROST COLOSSUS',
   color: '#45d9ff',
   radius: 68,
-  maxHealth: 280,
+  maxHealth: GAME_CONFIG.bosses.boss4Health,
   speed: 1.4,
   points: 1600,
 }
@@ -138,7 +138,7 @@ const BOSS5_CONFIG = {
   name: 'GALACTIC OVERLORD',
   color: '#ffe45e',
   radius: 72,
-  maxHealth: 350,
+  maxHealth: GAME_CONFIG.bosses.boss5Health,
   speed: 2,
   points: 2500,
 }
@@ -146,13 +146,95 @@ const BOSS5_CONFIG = {
 
 export default function Game({ onBack }) {
   const canvasRef = useRef(null)
+  
+  const backgroundMusicRef = useRef(null)
+  const soundEffectsEnabledRef = useRef(true)
+  const musicEnabledRef = useRef(true)
+  
+  
+  const soundEffectsRef = useRef({
+  shoot: new Audio('/audio/shoot.mpeg'),
+  enemyDestroy: new Audio('/audio/enemy-destroy.mpeg'),
+  playerHit: new Audio('/audio/player-hit.mpeg'),
+  bossHit: new Audio('/audio/boss-hit.mpeg'),
+  powerup: new Audio('/audio/powerup.mpeg'),
+  gameOver: new Audio('/audio/game-over.mpeg'),
+  victory: new Audio('/audio/victory.mpeg'),
+})
+
+const playSound = (soundName) => {
+  if (!soundEffectsEnabledRef.current) return
+
+  const sound = soundEffectsRef.current[soundName]
+
+  if (!sound) return
+
+  sound.pause()
+  sound.currentTime = 0
+  sound.play().catch((error) => {
+    console.log(`Could not play ${soundName}:`, error)
+  })
+}
+  // Initialize background music
+useEffect(() => {
+  const music = new Audio("/audio/background-music.mpeg")
+
+  music.loop = true
+  music.volume = 0.3
+
+  backgroundMusicRef.current = music
+
+  return () => {
+    music.pause()
+    music.currentTime = 0
+    backgroundMusicRef.current = null
+  }
+}, [])
+  const pauseRef = useRef(false)
   const [score, setScore] = useState(0)
-  const [health, setHealth] = useState(3)
+  const [missionMessage, setMissionMessage] = useState('')
+  const [health, setHealth] = useState(GAME_CONFIG.player.maxHealth)
   const [wave, setWave] = useState(1)
+  const [isPaused, setIsPaused] = useState(false);
+  const [musicEnabled, setMusicEnabled] = useState(true)
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true)
+  useEffect(() => {
+  soundEffectsEnabledRef.current = soundEffectsEnabled
+  musicEnabledRef.current = musicEnabled
+
+  if (!musicEnabled && backgroundMusicRef.current) {
+    backgroundMusicRef.current.pause()
+  }
+}, [musicEnabled, soundEffectsEnabled])
   const [gameOver, setGameOver] = useState(false)
   const [victory, setVictory] = useState(false)
   const [restartKey, setRestartKey] = useState(0)
   const [activePowerupNames, setActivePowerupNames] = useState([])
+  const [currentMission, setCurrentMission] = useState(0)
+  const [completedMissions, setCompletedMissions] = useState([])
+  useEffect(() => {
+  pauseRef.current = isPaused
+}, [isPaused])
+
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      setIsPaused(true)
+    }
+  }
+
+  document.addEventListener("visibilitychange", handleVisibilityChange)
+
+  return () => {
+    document.removeEventListener("visibilitychange", handleVisibilityChange)
+  }
+}, [])
+  
+  useEffect(() => {
+  const interval = setInterval(() => {  }, 500)
+
+  return () => clearInterval(interval)
+}, [])
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -170,6 +252,7 @@ export default function Game({ onBack }) {
     let boss=null
     let powerups = []
     let activePowerups = {}
+    let lastPowerupNames = ''
     let stars = Array.from({ length: 100 }, () => ({
       x: Math.random() * WIDTH,
       y: Math.random() * HEIGHT,
@@ -182,24 +265,34 @@ export default function Game({ onBack }) {
     let currentWave = 1
     let spawned = 0
     let defeated = 0
+    let missionObjectiveCompleted = false
     let bossWavesSpawned = []
     let frame = 0
     let lastShot = 0
     let running = true
     let animationId
 
-    const maxWaves = 15
+    const maxWaves = GAME_CONFIG.combat.totalWaves
 
     function handleKeyDown(event) {
-      if (
-        ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ']
-          .includes(event.key)
-      ) {
-        event.preventDefault()
-      }
+  if (
+    ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ']
+      .includes(event.key)
+  ) {
+    event.preventDefault()
+  }
 
-      keys[event.key.toLowerCase()] = true
-    }
+  // Start background music after the player's first interaction
+  const music = backgroundMusicRef.current
+
+  if (music && musicEnabledRef.current && music.paused) {
+    music.play().catch((error) => {
+      console.log('Background music could not play:', error)
+    })
+  }
+
+  keys[event.key.toLowerCase()] = true
+}
 
     function handleKeyUp(event) {
       keys[event.key.toLowerCase()] = false
@@ -394,14 +487,8 @@ function drawPowerup(powerup) {
 function spawnEnemy() {
   const types = Object.keys(ENEMY_TYPES)
 
-  const availableTypes =
-    currentWave < 3
-      ? ['scout', 'fighter']
-      : currentWave < 6
-        ? ['scout', 'fighter', 'tank']: types
-
-  const type =
-    availableTypes[Math.floor(Math.random() * availableTypes.length)]
+  const availableTypes = currentWave < 3 ? ['scout', 'fighter']: currentWave < 6 ? ['scout', 'fighter', 'tank']: types
+  const type = availableTypes[Math.floor(Math.random() * availableTypes.length)]
 
   const config = ENEMY_TYPES[type]
 
@@ -433,8 +520,6 @@ function spawnPowerup(x, y) {
   })
 }
 
-
-
 function spawnBoss() {
   let config = BOSS_CONFIG
   let type = 'void'
@@ -465,17 +550,25 @@ function spawnBoss() {
   spawned = currentWave * 5
 }
 
+function finishGame(won) {
+  running = false
+  setVictory(won)
+  setGameOver(true)
 
-
-
-    function finishGame(won) {
-      running = false
-      setVictory(won)
-      setGameOver(true)
-    }
+  if (won) {
+    playSound('victory')
+  } else {
+    playSound('gameOver')
+  }
+}
+    
 
     function loop() {
       if (!running) return
+      if (pauseRef.current) {
+    animationId = requestAnimationFrame(loop)
+    return
+  }
 
       frame++
 
@@ -524,8 +617,10 @@ function spawnBoss() {
       const shotInterval = rapidFireActive ? 4 : 12
 
       if (keys[' '] && frame - lastShot > shotInterval) {
-        const bulletDamage = damageBoostActive ? 20 : 10
-
+        const bulletDamage = damageBoostActive
+  ? GAME_CONFIG.combat.boostedBulletDamage
+  : GAME_CONFIG.combat.normalBulletDamage
+playSound('shoot')
         if (tripleShotActive) {
           bullets.push(
             {
@@ -612,7 +707,7 @@ if (boss) {
 }
 
 
-      // Move enemies, with Slow Motion support
+    // Move enemies, with Slow Motion support
       const slowMotionActive =
         activePowerups.slowMotion > Date.now()
 
@@ -647,19 +742,17 @@ powerups = powerups.filter((powerup) => {
   if (!collected) return true
 
   const type = powerup.type
+  playSound('powerup')
 
   if (type === 'healthRestore') {
-  setHealth((prevHealth) => Math.min(prevHealth + 1, 3))
-} else if (type === 'extraLife') {
+      setHealth((prevHealth) => Math.min(prevHealth + 1, GAME_CONFIG.player.maxHealth))
+  } else if (type === 'extraLife') {
   lives = Math.min(lives + 1, 5)
-} else if (type === 'bomb') {
+  } else if (type === 'bomb') {
     points += enemies.reduce(
-      (total, enemy) =>
-        total + (ENEMY_TYPES[enemy.type]?.points ?? 0),
-      0
-    )
-    setScore(points)
-    enemies = []
+      (total, enemy) => total + (ENEMY_TYPES[enemy.type]?.points ?? 0),0)
+      setScore(points)
+      enemies = []
   } else if (POWERUP_TYPES[type]) {
     
 activePowerups[type] =
@@ -685,6 +778,7 @@ if (boss) {
       Math.abs(bullet.y - boss.y) < config.radius
 
     if (hitBoss) {
+      playSound('bossHit')
       boss.health -= bullet.damage ?? 10
       return false
     }
@@ -693,10 +787,38 @@ if (boss) {
   })
 
   if (boss.health <= 0) {
-    points += config.points
-    setScore(points)
-    boss = null
+  points += config.points
+
+  // Complete boss mission
+  const bossMission = missions.find((mission) => mission.boss)
+
+  if (
+  bossMission &&
+  currentWave === bossMission.wave &&
+  !completedMissions.includes(bossMission.id)
+) {
+    setCompletedMissions((previous) => {
+      if (previous.includes(bossMission.id)) {
+        return previous
+      }
+
+      return [...previous, bossMission.id]
+    })
+
+    points += bossMission.reward
+
+    setMissionMessage(
+      `MISSION COMPLETED! +${bossMission.reward} BONUS POINTS`
+    )
+
+    setTimeout(() => {
+      setMissionMessage('')
+    }, 3000)
   }
+
+  setScore(points)
+  boss = null
+}
 }
 
       // Bullet collisions
@@ -717,6 +839,8 @@ if (boss) {
 
           
 if (enemy.health <= 0) {
+  playSound('enemyDestroy')
+
   points += ENEMY_TYPES[enemy.type].points
 
   if (Math.random() < 0.2) {
@@ -725,15 +849,46 @@ if (enemy.health <= 0) {
 
   enemies.splice(hitIndex, 1)
   defeated++
+
+  if (
+    defeated >= missions[currentMission].enemyCount &&
+    !missions[currentMission].boss &&
+    !missionObjectiveCompleted
+  ) {
+    missionObjectiveCompleted = true
+
+    setCompletedMissions((previous) => {
+  const missionId = missions[currentMission].id
+
+  if (previous.includes(missionId)) {
+    return previous
+  }
+
+  return [...previous, missionId]
+})
+
+    const reward = missions[currentMission].reward
+    points += reward
+
+    setScore(points)
+
+    setMissionMessage(
+    `MISSION COMPLETED! +${reward} BONUS POINTS`
+)
+
+    setTimeout(() => {
+        setMissionMessage('')
+    }, 3000)
+  }
+
   setScore(points)
 }
 
-          return false
-        }
+  return false
+}
 
-        return true
-      })
-
+return true
+})
       // Player collisions and missed enemies
       const remainingEnemies = []
 
@@ -748,6 +903,7 @@ if (enemy.health <= 0) {
           (activePowerups.shield ?? 0) <= Date.now()
         ) {
           lives--
+          playSound('playerHit')
           setHealth(lives)
 
           if (lives <= 0) {
@@ -772,50 +928,138 @@ if (enemy.health <= 0) {
         spawned = 0
         defeated = 0
         setWave(currentWave)
+        const nextMissionIndex = missions.findIndex(
+          (mission) => mission.wave === currentWave
+          )
+
+              if (nextMissionIndex !== -1) {
+        setCurrentMission(nextMissionIndex)
+        missionObjectiveCompleted = false
       }
-
-      drawShip(player.x, player.y)
-
-      // In-game information
-      ctx.fillStyle = '#50e8ff'
-      ctx.font = '14px Arial'
-      ctx.fillText('MOVE: WASD / ARROWS', 18, 28)
-      ctx.fillText('SHOOT: SPACE', 18, 49)
-
-      ctx.fillStyle = '#ffffff'
-      ctx.fillText(`ENEMIES: ${defeated}/${waveTarget}`, WIDTH - 170, 28)
-
-      animationId = requestAnimationFrame(loop)
     }
 
-    loop()
+    drawShip(player.x, player.y)
 
-    return () => {
-      running = false
-      cancelAnimationFrame(animationId)
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
+    // In-game information
+    ctx.fillStyle = '#50e8ff'
+    ctx.font = '14px Arial'
+    ctx.fillText('MOVE: WASD / ARROWS', 18, 28)
+    ctx.fillText('SHOOT: SPACE', 18, 49)
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(`ENEMIES: ${defeated}/${waveTarget}`, WIDTH - 170, 28)
+
+    const currentPowerupNames = Object.keys(activePowerups)
+      .filter((key) => activePowerups[key] > Date.now())
+      .map((key) => POWERUP_TYPES[key].name)
+
+    const powerupNamesKey = currentPowerupNames.join(',')
+
+    if (powerupNamesKey !== lastPowerupNames) {
+      lastPowerupNames = powerupNamesKey
+      setActivePowerupNames(currentPowerupNames)
     }
-  }, [restartKey])
+
+    animationId = requestAnimationFrame(loop)
+  }
+
+  loop()
+
+  return () => {
+    running = false
+    cancelAnimationFrame(animationId)
+    window.removeEventListener('keydown', handleKeyDown)
+    window.removeEventListener('keyup', handleKeyUp)
+  }
+}, [restartKey])
+
+ const getMissionStatus = (mission, index) => {
+    if (completedMissions.includes(mission.id)) {
+      return 'COMPLETED'
+    }
+
+    if (index === currentMission) {
+      return 'ACTIVE'
+    }
+
+    return 'LOCKED'
+  }
 
   return (
     <main className="game-screen">
-      <header className="game-header">
-        <button className="game-back" onClick={onBack}>
-          ← HOME
-        </button>
+  <header className="game-header">
+    <button className="game-back" onClick={onBack}>
+      ← HOME
+    </button>
 
-        <h2>MISSION 01: FIRST CONTACT</h2>
+    <h2>MISSION {String(missions[currentMission]?.id).padStart(2, '0')}: {missions[currentMission]?.name}</h2>
 
-        <div className="game-hud">
-          <span>SCORE: {score}</span>
-          <span>WAVE: {wave}/15</span>
-          <span>
-            HULL: {'♥'.repeat(Math.min(3, Math.max(0, health)))}
-            {'♡'.repeat(Math.max(0, 3 - health))}
-          </span>
-        </div>
-      </header>
+    <div className="mission-info">
+    <p>{missions[currentMission]?.description}</p>
+    <p>OBJECTIVE: {missions[currentMission]?.objective}</p>
+    <p>REWARD: {missions[currentMission]?.reward} POINTS</p>
+    </div>
+
+    <div className="mission-progress">MISSION PROGRESS: {currentMission + 1} / {missions.length}</div>
+    <div className="mission-status-panel">
+  <h3>MISSION STATUS</h3>
+
+  {missions.map((mission, index) => {
+    const status = getMissionStatus(mission, index)
+
+    return (
+      <div className={`mission-status-item ${status.toLowerCase()}`} key={mission.id}>
+        <span>
+          {String(mission.id).padStart(2, '0')} - {mission.name}
+        </span>
+
+        <span className="mission-status-label">
+          {status}
+        </span>
+      </div>
+    )
+  })}
+</div>
+    {missionMessage && (
+    <div className="mission-completed">
+    {missionMessage}
+    </div>
+    )}
+    
+    <div className="audio-controls">
+  <button
+    onClick={() => setMusicEnabled((previous) => !previous)}
+  >
+    MUSIC: {musicEnabled ? 'ON' : 'OFF'}
+  </button>
+
+  <button
+    onClick={() => setSoundEffectsEnabled((previous) => !previous)}
+  >
+    SOUND FX: {soundEffectsEnabled ? 'ON' : 'OFF'}
+  </button>
+</div>
+    <div className="game-hud">
+
+      <span>SCORE: {score}</span>
+      <span>WAVE: {wave}/15</span>
+      <div className="pause-controls">
+  {!isPaused ? (
+    <button onClick={() => setIsPaused(true)}>
+      PAUSE
+    </button>
+  ) : (
+    <button onClick={() => setIsPaused(false)}>
+      RESUME
+    </button>
+  )}
+</div>
+      <span>
+        HULL: {'♥'.repeat(Math.min(GAME_CONFIG.player.maxHealth, Math.max(0, health)))}
+        {'♡'.repeat(Math.max(0, 3 - health))}
+      </span>
+    </div>
+  </header>
       
 
 <div className="active-powerups">
@@ -833,6 +1077,38 @@ if (enemy.health <= 0) {
           height={HEIGHT}
           aria-label="Space shooter game"
         />
+        
+        {isPaused && (
+  <div className="pause-overlay">
+    <div className="pause-menu">
+      <h2>GAME PAUSED</h2>
+      <p>Your mission is on hold.</p>
+
+      <button onClick={() => setIsPaused(false)}>
+        RESUME GAME
+      </button>
+
+      <button
+        onClick={() => {
+          setScore(0)
+          setHealth(GAME_CONFIG.player.maxHealth)
+          setWave(1)
+          setCurrentMission(0)
+          setGameOver(false)
+          setVictory(false)
+          setIsPaused(false)
+          setRestartKey((value) => value + 1)
+        }}
+      >
+        RESTART MISSION
+      </button>
+
+      <button onClick={onBack}>
+        BACK TO HOME
+      </button>
+    </div>
+  </div>
+)}
 
         {gameOver && (
           <div className="game-over">
@@ -843,8 +1119,9 @@ if (enemy.health <= 0) {
             <button
               onClick={() => {
                 setScore(0)
-                setHealth(3)
+                setHealth(GAME_CONFIG.player.maxHealth)
                 setWave(1)
+                setCurrentMission(0)
                 setGameOver(false)
                 setVictory(false)
                 setRestartKey((value) => value + 1)

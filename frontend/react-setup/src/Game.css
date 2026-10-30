@@ -144,3 +144,204 @@
   font-weight: bold;
   letter-spacing: 1px;
 }
+
+.mission-info {
+  margin: 12px auto;
+  padding: 12px 20px;
+  max-width: 600px;
+  text-align: center;
+  background: rgba(10, 25, 55, 0.85);
+  border: 1px solid #45d9ff;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(69, 217, 255, 0.2);
+}
+
+.mission-info p {
+  margin: 6px 0;
+  color: #c5eaff;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.mission-info p:first-child {
+  color: #45d9ff;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.mission-progress {
+  margin: 8px auto 15px;
+  color: #ffe66d;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.mission-completed {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 16px 30px;
+  background: rgba(0, 20, 40, 0.92);
+  border: 2px solid #50e8ff;
+  border-radius: 12px;
+  color: #50e8ff;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-align: center;
+  box-shadow: 0 0 15px #50e8ff, 0 0 35px rgba(80, 232, 255, 0.5);
+  animation: missionPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes missionPulse {
+  from {
+    box-shadow: 0 0 10px #50e8ff;
+  }
+  to {
+    box-shadow: 0 0 25px #50e8ff, 0 0 45px rgba(80, 232, 255, 0.7);
+  }
+}
+
+.mission-status-panel {
+  margin: 20px auto;
+  padding: 18px;
+  width: 90%;
+  max-width: 500px;
+  background: rgba(5, 15, 35, 0.95);
+  border: 1px solid #50e8ff;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(80, 232, 255, 0.25);
+}
+
+.mission-status-panel h3 {
+  color: #50e8ff;
+  text-align: center;
+  letter-spacing: 3px;
+  margin-bottom: 15px;
+}
+
+.mission-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
+  font-size: 13px;
+}
+
+.mission-status-label {
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.mission-status-item.completed {
+  border-left: 4px solid #00ff99;
+}
+
+.mission-status-item.completed .mission-status-label {
+  color: #00ff99;
+}
+
+.mission-status-item.active {
+  border-left: 4px solid #50e8ff;
+  background: rgba(80, 232, 255, 0.12);
+}
+
+.mission-status-item.active .mission-status-label {
+  color: #50e8ff;
+}
+
+.mission-status-item.locked {
+  border-left: 4px solid #777;
+  opacity: 0.55;
+}
+
+.mission-status-item.locked .mission-status-label {
+  color: #999;
+}
+
+/* Pause Menu */
+.canvas-wrapper {
+  position: relative;
+}
+
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 15, 0.8);
+  z-index: 10;
+}
+
+.pause-menu {
+  width: 320px;
+  padding: 30px;
+  text-align: center;
+  background: #101a35;
+  border: 2px solid #50e8ff;
+  border-radius: 15px;
+  box-shadow: 0 0 30px #50e8ff55;
+}
+
+.pause-menu h2 {
+  color: #50e8ff;
+  font-size: 26px;
+  margin-bottom: 12px;
+}
+
+.pause-menu p {
+  color: #ffffff;
+  margin-bottom: 25px;
+}
+
+.pause-menu button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  background: #50e8ff;
+  color: #050711;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.pause-menu button:hover {
+  background: #ffffff;
+  box-shadow: 0 0 15px #50e8ff;
+}
+.audio-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.audio-controls button {
+  background: #111827;
+  color: #50e8ff;
+  border: 1px solid #50e8ff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.audio-controls button:hover {
+  background: #50e8ff;
+  color: #030510;
+  box-shadow: 0 0 15px #50e8ff;
+}

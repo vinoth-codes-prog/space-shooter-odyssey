@@ -35,7 +35,13 @@ button {
 .game-container {
   min-height: 100vh;
   overflow: hidden;
+
   background:
+    linear-gradient(
+      rgba(5, 7, 17, 0.78),
+      rgba(5, 7, 17, 0.88)
+    ),
+    url('/assets/backgrounds/home-space-bg.png') center / cover no-repeat,
     radial-gradient(ellipse at 78% 20%, #17224a 0%, transparent 35%),
     radial-gradient(ellipse at 15% 45%, #10152d 0%, transparent 40%),
     #050711;
@@ -494,9 +500,9 @@ footer {
     width: 280px;
   }
 
-  .ship {
-    font-size: 75px;
-  }
+ .ship {
+  font-size: 75px;
+}
 
   .ship-label {
     flex-wrap: wrap;
