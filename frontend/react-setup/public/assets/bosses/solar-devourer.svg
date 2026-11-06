@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow-solar" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Giant Blazing Solar Core -->
+  <circle cx="128" cy="128" r="75" fill="#f59e0b" filter="url(#glow-solar)" />
+  <circle cx="128" cy="128" r="55" fill="#ef4444" filter="url(#glow-solar)" />
+  <circle cx="128" cy="128" r="35" fill="#ffffff" filter="url(#glow-solar)" />
+
+  <!-- Orbiting Solar Heat Radiators -->
+  <g stroke="#facc15" stroke-width="4" fill="#451a03">
+    <!-- Top Cannon -->
+    <rect x="116" y="10" width="24" height="40" rx="6" />
+    <circle cx="128" cy="25" r="6" fill="#ffffff" filter="url(#glow-solar)" />
+    <!-- Bottom Super-Beam Cannon -->
+    <rect x="110" y="200" width="36" height="48" rx="8" />
+    <circle cx="128" cy="225" r="10" fill="#ffffff" filter="url(#glow-solar)" />
+    <!-- Left Radiator -->
+    <rect x="10" y="116" width="40" height="24" rx="6" />
+    <!-- Right Radiator -->
+    <rect x="206" y="116" width="40" height="24" rx="6" />
+  </g>
+
+  <!-- Corona Solar Energy Arcs -->
+  <ellipse cx="128" cy="128" rx="105" ry="35" fill="none" stroke="#fde047" stroke-width="3" filter="url(#glow-solar)" transform="rotate(-30 128 128)" stroke-dasharray="24 12" />
+  <ellipse cx="128" cy="128" rx="105" ry="35" fill="none" stroke="#f97316" stroke-width="2.5" filter="url(#glow-solar)" transform="rotate(30 128 128)" stroke-dasharray="24 12" />
+</svg>

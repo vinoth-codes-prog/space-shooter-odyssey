@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow-boss-red" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="iron-hull" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#111827" />
+      <stop offset="25%" stop-color="#1f2937" />
+      <stop offset="50%" stop-color="#374151" />
+      <stop offset="75%" stop-color="#1f2937" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+  </defs>
+
+  <!-- Heavy Exhaust Jets -->
+  <g filter="url(#glow-boss-red)">
+    <path d="M 50,30 Q 56,2 56,0 Q 56,2 62,30 Z" fill="#ef4444" />
+    <path d="M 194,30 Q 200,2 200,0 Q 200,2 206,30 Z" fill="#ef4444" />
+    <path d="M 120,25 Q 128,0 128,-4 Q 128,0 136,25 Z" fill="#ef4444" />
+  </g>
+
+  <!-- Gigantic Armored Citadel Hull -->
+  <path d="M 128,245 
+           L 175,180 
+           L 245,140 
+           C 255,100 240,60 215,50 
+           L 190,75 
+           L 170,35 
+           L 138,40 
+           L 128,25 
+           L 118,40 
+           L 86,35 
+           L 66,75 
+           L 41,50 
+           C 16,60 1,100 11,140 
+           L 81,180 Z" 
+        fill="url(#iron-hull)" stroke="#f87171" stroke-width="4" />
+
+  <!-- Heavy Fore Battering Ram & Armor Slits -->
+  <rect x="78" y="100" width="100" height="24" rx="4" fill="#991b1b" stroke="#fca5a5" stroke-width="2" />
+  <line x1="88" y1="112" x2="168" y2="112" stroke="#ffffff" stroke-width="3" filter="url(#glow-boss-red)" />
+
+  <!-- Dual Heavy Laser Sponson Turrets -->
+  <g>
+    <!-- Left Turret -->
+    <circle cx="56" cy="115" r="22" fill="#1f2937" stroke="#ef4444" stroke-width="3" />
+    <rect x="52" y="125" width="8" height="40" rx="3" fill="#dc2626" />
+    <circle cx="56" cy="165" r="5" fill="#fef08a" filter="url(#glow-boss-red)" />
+
+    <!-- Right Turret -->
+    <circle cx="200" cy="115" r="22" fill="#1f2937" stroke="#ef4444" stroke-width="3" />
+    <rect x="196" y="125" width="8" height="40" rx="3" fill="#dc2626" />
+    <circle cx="200" cy="165" r="5" fill="#fef08a" filter="url(#glow-boss-red)" />
+  </g>
+
+  <!-- Core Reactor Command Bridge -->
+  <circle cx="128" cy="150" r="25" fill="#450a0a" stroke="#ef4444" stroke-width="3" />
+  <circle cx="128" cy="150" r="14" fill="#ef4444" filter="url(#glow-boss-red)" />
+  <circle cx="128" cy="150" r="6" fill="#ffffff" />
+</svg>

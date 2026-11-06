@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="support-hull" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="30%" stop-color="#312e81" />
+      <stop offset="50%" stop-color="#4c1d95" />
+      <stop offset="70%" stop-color="#312e81" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <linearGradient id="gold-flame" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#fde047" />
+      <stop offset="70%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="rgba(234,179,8,0)" />
+    </linearGradient>
+  </defs>
+
+  <!-- Golden Exhaust Thruster -->
+  <g filter="url(#glow-gold)">
+    <path d="M 110,188 Q 128,248 128,252 Q 128,248 146,188 Z" fill="url(#gold-flame)" />
+    <path d="M 70,180 Q 76,230 76,235 Q 76,230 82,180 Z" fill="url(#gold-flame)" opacity="0.7" />
+    <path d="M 174,180 Q 180,230 180,235 Q 180,230 186,180 Z" fill="url(#gold-flame)" opacity="0.7" />
+  </g>
+
+  <g id="support-body">
+    <!-- Floating Celestial Halo Wings -->
+    <ellipse cx="128" cy="120" rx="95" ry="45" fill="none" stroke="#facc15" stroke-width="3" filter="url(#glow-gold)" stroke-dasharray="16 8" />
+
+    <!-- Sleek Fuselage -->
+    <path d="M 128,14 
+             C 145,45 162,90 178,135 
+             C 188,160 170,192 145,192 
+             L 111,192 
+             C 86,192 68,160 78,135 
+             C 94,90 111,45 128,14 Z" 
+          fill="url(#support-hull)" stroke="#c084fc" stroke-width="2.5" />
+
+    <!-- Nanite Sensor Dome -->
+    <circle cx="128" cy="90" r="24" fill="#581c87" stroke="#facc15" stroke-width="2" />
+    <circle cx="128" cy="90" r="14" fill="#facc15" filter="url(#glow-gold)" opacity="0.9" />
+    <circle cx="128" cy="90" r="6" fill="#ffffff" />
+
+    <!-- Nanite Drone Launch Bays -->
+    <circle cx="56" cy="120" r="10" fill="#facc15" filter="url(#glow-gold)" />
+    <circle cx="200" cy="120" r="10" fill="#facc15" filter="url(#glow-gold)" />
+  </g>
+</svg>

@@ -1,1146 +1,1166 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import './Game.css';
+import { GAME_NAME, SHIP_CLASSES, POWERUPS_CONFIG, ECONOMY_CONFIG } from './config/gameConfig';
+import { GameRenderer } from './game/renderer';
+import { soundManager } from './services/soundManager';
 
-import { useEffect, useRef, useState } from 'react'
-import './Game.css'
-import { missions } from './data/missions'
-import { GAME_CONFIG } from './config/gameConfig'
-
-const WIDTH = 900
-const HEIGHT = 560
-
-
-const ENEMY_TYPES = {
-  scout: {
-    name: 'Scout',
-    color: '#ff4d6d',
-    health: 1,
-    speed: 2.8,
-    radius: 15,
-    points: 100,
-  },
-  fighter: {
-    name: 'Fighter',
-    color: '#ff9f43',
-    health: 2,
-    speed: 2,
-    radius: 20,
-    points: 200,
-  },
-  tank: {
-    name: 'Tank',
-    color: '#a855f7',
-    health: 4,
-    speed: 1.2,
-    radius: 27,
-    points: 350,
-  },
-  interceptor: {
-    name: 'Interceptor',
-    color: '#45d9ff',
-    health: 2,
-    speed: 3.5,
-    radius: 18,
-    points: 250,
-  },
-  elite: {
-    name: 'Elite',
-    color: '#ffe45e',
-    health: 5,
-    speed: 1.8,
-    radius: 30,
-    points: 500,
-  },
-}
-
-
-const POWERUP_TYPES = {
-  rapidFire: {
-    name: 'Rapid Fire',
-    color: '#ffe45e',
-    duration: 8000,
-  },
-  tripleShot: {
-    name: 'Triple Shot',
-    color: '#45d9ff',
-    duration: 8000,
-  },
-  shield: {
-    name: 'Shield',
-    color: '#bc83ff',
-    duration: 8000,
-  },
-  healthRestore: {
-    name: 'Health Restore',
-    color: '#4ade80',
-    duration: 0,
-  },
-  extraLife: {
-    name: 'Extra Life',
-    color: '#ff4d6d',
-    duration: 0,
-  },
-  damageBoost: {
-    name: 'Damage Boost',
-    color: '#ff8c42',
-    duration: 8000,
-  },
-  bomb: {
-    name: 'Bomb',
-    color: '#ff245c',
-    duration: 0,
-  },
-  slowMotion: {
-    name: 'Slow Motion',
-    color: '#60a5fa',
-    duration: 8000,
-  },
-}
-
-const BOSS_CONFIG = {
-  name: 'VOID DESTROYER',
-  color: '#ff245c',
-  radius: 48,
-  maxHealth: GAME_CONFIG.bosses.boss1Health,
-  speed: 1.5,
-  points: 500,
-}
-
-const BOSS2_CONFIG = {
-  name: 'SHADOW REAPER',
-  color: '#bc83ff',
-  radius: 55,
-  maxHealth: GAME_CONFIG.bosses.boss2Health,
-  speed: 2.2,
-  points: 800,
-}
-
-
-const BOSS3_CONFIG = {
-  name: 'INFERNO TITAN',
-  color: '#ff8c42',
-  radius: 62,
-  maxHealth: GAME_CONFIG.bosses.boss3Health,
-  speed: 1.8,
-  points: 1200,
-}
-
-
-const BOSS4_CONFIG = {
-  name: 'FROST COLOSSUS',
-  color: '#45d9ff',
-  radius: 68,
-  maxHealth: GAME_CONFIG.bosses.boss4Health,
-  speed: 1.4,
-  points: 1600,
-}
-
-
-const BOSS5_CONFIG = {
-  name: 'GALACTIC OVERLORD',
-  color: '#ffe45e',
-  radius: 72,
-  maxHealth: GAME_CONFIG.bosses.boss5Health,
-  speed: 2,
-  points: 2500,
-}
-
-
-export default function Game({ onBack }) {
-  const canvasRef = useRef(null)
+export default function Game({ mission, playerData, onUpdatePlayerData, onBack }) {
+  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
   
-  const backgroundMusicRef = useRef(null)
-  const soundEffectsEnabledRef = useRef(true)
-  const musicEnabledRef = useRef(true)
-  
-  
-  const soundEffectsRef = useRef({
-  shoot: new Audio('/audio/shoot.mpeg'),
-  enemyDestroy: new Audio('/audio/enemy-destroy.mpeg'),
-  playerHit: new Audio('/audio/player-hit.mpeg'),
-  bossHit: new Audio('/audio/boss-hit.mpeg'),
-  powerup: new Audio('/audio/powerup.mpeg'),
-  gameOver: new Audio('/audio/game-over.mpeg'),
-  victory: new Audio('/audio/victory.mpeg'),
-})
-
-const playSound = (soundName) => {
-  if (!soundEffectsEnabledRef.current) return
-
-  const sound = soundEffectsRef.current[soundName]
-
-  if (!sound) return
-
-  sound.pause()
-  sound.currentTime = 0
-  sound.play().catch((error) => {
-    console.log(`Could not play ${soundName}:`, error)
-  })
-}
-  // Initialize background music
-useEffect(() => {
-  const music = new Audio("/audio/background-music.mpeg")
-
-  music.loop = true
-  music.volume = 0.3
-
-  backgroundMusicRef.current = music
-
-  return () => {
-    music.pause()
-    music.currentTime = 0
-    backgroundMusicRef.current = null
-  }
-}, [])
-  const pauseRef = useRef(false)
-  const [score, setScore] = useState(0)
-  const [missionMessage, setMissionMessage] = useState('')
-  const [health, setHealth] = useState(GAME_CONFIG.player.maxHealth)
-  const [wave, setWave] = useState(1)
+  // Game state
+  const [score, setScore] = useState(0);
+  const [health, setHealth] = useState(100);
+  const [maxHealth, setMaxHealth] = useState(100);
+  const [shield, setShield] = useState(50);
+  const [maxShield, setMaxShield] = useState(50);
+  const [shieldActive, setShieldActive] = useState(false);
+  const [wave, setWave] = useState(1);
+  const [enemiesDefeated, setEnemiesDefeated] = useState(0);
+  const [bossHp, setBossHp] = useState(null);
+  const [bossMaxHp, setBossMaxHp] = useState(null);
+  const [bossName, setBossName] = useState(null);
   const [isPaused, setIsPaused] = useState(false);
-  const [musicEnabled, setMusicEnabled] = useState(true)
-  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true)
-  useEffect(() => {
-  soundEffectsEnabledRef.current = soundEffectsEnabled
-  musicEnabledRef.current = musicEnabled
+  const [gameOver, setGameOver] = useState(false);
+  const [victory, setVictory] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activePowerups, setActivePowerups] = useState([]);
+  const [specialCooldown, setSpecialCooldown] = useState(0);
+  const [reviveAvailable, setReviveAvailable] = useState(true);
+  const [adModal, setAdModal] = useState(null); // { type: 'revive'|'double_credits'|'double_score', countdown: 3 }
+  const [missionStats, setMissionStats] = useState({ shotsFired: 0, shotsHit: 0, damageTaken: 0, startTime: Date.now() });
 
-  if (!musicEnabled && backgroundMusicRef.current) {
-    backgroundMusicRef.current.pause()
-  }
-}, [musicEnabled, soundEffectsEnabled])
-  const [gameOver, setGameOver] = useState(false)
-  const [victory, setVictory] = useState(false)
-  const [restartKey, setRestartKey] = useState(0)
-  const [activePowerupNames, setActivePowerupNames] = useState([])
-  const [currentMission, setCurrentMission] = useState(0)
-  const [completedMissions, setCompletedMissions] = useState([])
-  useEffect(() => {
-  pauseRef.current = isPaused
-}, [isPaused])
+  // References for requestAnimationFrame loop
+  const loopRef = useRef(null);
+  const keysRef = useRef({});
+  const touchStateRef = useRef({ active: false, x: 0, y: 0, isFiring: true });
+  const gameEngineRef = useRef(null);
 
-useEffect(() => {
-  const handleVisibilityChange = () => {
-    if (document.hidden) {
-      setIsPaused(true)
+  // Selected ship details with upgrades applied
+  const selectedShipId = playerData?.selectedShip || 'interceptor';
+  const shipConfig = SHIP_CLASSES[selectedShipId] || SHIP_CLASSES.interceptor;
+  const shipUpgrades = playerData?.shipUpgrades?.[selectedShipId] || { damage: 0, fireRate: 0, health: 0, speed: 0, shield: 0 };
+
+  const effectiveHealth = shipConfig.baseStats.health + shipUpgrades.health * 20;
+  const effectiveShield = shipConfig.baseStats.shield + shipUpgrades.shield * 15;
+  const effectiveDamage = shipConfig.baseStats.damage + shipUpgrades.damage * 5;
+  const effectiveSpeed = shipConfig.baseStats.speed + shipUpgrades.speed * 0.8;
+  const effectiveFireRate = shipConfig.baseStats.fireRate + shipUpgrades.fireRate * 1.2;
+
+  // Toggle Fullscreen mode
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen?.().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+      setIsFullscreen(false);
     }
-  }
+  };
 
-  document.addEventListener("visibilitychange", handleVisibilityChange)
-
-  return () => {
-    document.removeEventListener("visibilitychange", handleVisibilityChange)
-  }
-}, [])
-  
+  // Keyboard and Visibility handlers
   useEffect(() => {
-  const interval = setInterval(() => {  }, 500)
-
-  return () => clearInterval(interval)
-}, [])
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext('2d')
-    const keys = {}
-
-    const player = {
-      x: WIDTH / 2,
-      y: HEIGHT - 65,
-    }
-
-    let bullets = []
-    let enemies = []
-    let boss=null
-    let powerups = []
-    let activePowerups = {}
-    let lastPowerupNames = ''
-    let stars = Array.from({ length: 100 }, () => ({
-      x: Math.random() * WIDTH,
-      y: Math.random() * HEIGHT,
-      speed: 0.5 + Math.random() * 2,
-      size: Math.random() * 2 + 1,
-    }))
-
-    let points = 0
-    let lives = 3
-    let currentWave = 1
-    let spawned = 0
-    let defeated = 0
-    let missionObjectiveCompleted = false
-    let bossWavesSpawned = []
-    let frame = 0
-    let lastShot = 0
-    let running = true
-    let animationId
-
-    const maxWaves = GAME_CONFIG.combat.totalWaves
-
-    function handleKeyDown(event) {
-  if (
-    ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ']
-      .includes(event.key)
-  ) {
-    event.preventDefault()
-  }
-
-  // Start background music after the player's first interaction
-  const music = backgroundMusicRef.current
-
-  if (music && musicEnabledRef.current && music.paused) {
-    music.play().catch((error) => {
-      console.log('Background music could not play:', error)
-    })
-  }
-
-  keys[event.key.toLowerCase()] = true
-}
-
-    function handleKeyUp(event) {
-      keys[event.key.toLowerCase()] = false
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-
-    function drawShip(x, y) {
-      ctx.save()
-      ctx.translate(x, y)
-
-      ctx.fillStyle = '#50e8ff'
-      ctx.shadowColor = '#50e8ff'
-      ctx.shadowBlur = 18
-      ctx.beginPath()
-      ctx.moveTo(0, -22)
-      ctx.lineTo(17, 17)
-      ctx.lineTo(0, 9)
-      ctx.lineTo(-17, 17)
-      ctx.closePath()
-      ctx.fill()
-
-      ctx.fillStyle = '#ffffff'
-      ctx.beginPath()
-      ctx.moveTo(0, -12)
-      ctx.lineTo(5, 5)
-      ctx.lineTo(-5, 5)
-      ctx.closePath()
-      ctx.fill()
-
-      ctx.shadowBlur = 0
-      ctx.fillStyle = '#ff9c43'
-      ctx.beginPath()
-      ctx.moveTo(-6, 16)
-      ctx.lineTo(0, 25 + Math.random() * 5)
-      ctx.lineTo(6, 16)
-      ctx.fill()
-
-      ctx.restore()
-    }
-
-    
-function drawEnemy(enemy) {
-  const config = ENEMY_TYPES[enemy.type]
-  const radius = enemy.radius
-
-  ctx.save()
-  ctx.translate(enemy.x, enemy.y)
-  ctx.fillStyle = config.color
-
-  if (enemy.type === 'scout') {
-    ctx.beginPath()
-    ctx.moveTo(0, radius)
-    ctx.lineTo(-radius, -radius)
-    ctx.lineTo(radius, -radius)
-    ctx.closePath()
-    ctx.fill()
-  } else if (enemy.type === 'fighter') {
-    ctx.beginPath()
-    ctx.moveTo(0, radius)
-    ctx.lineTo(-radius, 0)
-    ctx.lineTo(-radius * 0.6, -radius)
-    ctx.lineTo(radius * 0.6, -radius)
-    ctx.lineTo(radius, 0)
-    ctx.closePath()
-    ctx.fill()
-  } else if (enemy.type === 'tank') {
-    ctx.fillRect(-radius, -radius, radius * 2, radius * 2)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(-radius / 2, -radius / 2, radius, radius)
-  } else if (enemy.type === 'interceptor') {
-    ctx.beginPath()
-    ctx.moveTo(0, radius)
-    ctx.lineTo(-radius * 0.5, 0)
-    ctx.lineTo(-radius, -radius)
-    ctx.lineTo(0, -radius * 0.5)
-    ctx.lineTo(radius, -radius)
-    ctx.lineTo(radius * 0.5, 0)
-    ctx.closePath()
-    ctx.fill()
-  } else if (enemy.type === 'elite') {
-    ctx.beginPath()
-    ctx.arc(0, 0, radius, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(-radius * 0.5, -4, radius, 8)
-  }
-
-  ctx.restore()
-}
-
-function getBossConfig(boss) {
-  if (boss.type === 'overlord') return BOSS5_CONFIG
-  if (boss.type === 'frost') return BOSS4_CONFIG
-  if (boss.type === 'titan') return BOSS3_CONFIG
-  if (boss.type === 'shadow') return BOSS2_CONFIG
-
-  return BOSS_CONFIG
-}
-
-
-
-function drawBoss(boss) {
-  const config = getBossConfig(boss)
-  const radius = config.radius
-
-  ctx.save()
-  ctx.translate(boss.x, boss.y)
-
-  ctx.fillStyle = config.color
-  ctx.beginPath()
-  ctx.moveTo(0, radius)
-  ctx.lineTo(-radius, -radius * 0.45)
-  ctx.lineTo(-radius * 0.65, -radius * 0.8)
-  ctx.lineTo(0, -radius * 0.4)
-  ctx.lineTo(radius * 0.65, -radius * 0.8)
-  ctx.lineTo(radius, -radius * 0.45)
-  ctx.closePath()
-  ctx.fill()
-
-  ctx.fillStyle = '#ffd166'
-  ctx.fillRect(-8, -12, 16, 24)
-
-  ctx.fillStyle = '#ff9db5'
-  ctx.fillRect(-radius - 5, -10, 12, 25)
-  ctx.fillRect(radius - 7, -10, 12, 25)
-
-  ctx.restore()
-
-  const barWidth = 220
-  const barHeight = 12
-  const barX = (WIDTH - barWidth) / 2
-  const barY = 18
-  const healthPercent = Math.max(0, boss.health / boss.maxHealth)
-
-  ctx.fillStyle = '#35101c'
-  ctx.fillRect(barX, barY, barWidth, barHeight)
-
-  ctx.fillStyle = config.color
-  ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight)
-
-  ctx.strokeStyle = '#ffffff'
-  ctx.strokeRect(barX, barY, barWidth, barHeight)
-
-  ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 13px Arial'
-  ctx.textAlign = 'center'
-  ctx.fillText(
-    `${config.name} — ${Math.ceil(boss.health)} HP`,
-    WIDTH / 2,
-    barY + 28
-  )
-}
-
-
-function drawPowerup(powerup) {
-  const config = POWERUP_TYPES[powerup.type]
-
-  ctx.save()
-  ctx.translate(powerup.x, powerup.y)
-
-  ctx.fillStyle = config.color
-  ctx.beginPath()
-  ctx.arc(0, 0, powerup.radius, 0, Math.PI * 2)
-  ctx.fill()
-
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 2
-  ctx.stroke()
-
-  ctx.fillStyle = '#111827'
-  ctx.font = 'bold 12px Arial'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-
-  const symbols = {
-    rapidFire: 'R',
-    tripleShot: '3',
-    shield: 'S',
-    healthRestore: '+',
-    extraLife: 'L',
-    damageBoost: 'D',
-    bomb: 'B',
-    slowMotion: 'T',
-  }
-
-  ctx.fillText(symbols[powerup.type], 0, 0)
-  ctx.restore()
-}
-
-function spawnEnemy() {
-  const types = Object.keys(ENEMY_TYPES)
-
-  const availableTypes = currentWave < 3 ? ['scout', 'fighter']: currentWave < 6 ? ['scout', 'fighter', 'tank']: types
-  const type = availableTypes[Math.floor(Math.random() * availableTypes.length)]
-
-  const config = ENEMY_TYPES[type]
-
-  enemies.push({
-    type,
-    x: Math.random() * (WIDTH - config.radius * 2) + config.radius,
-    y: -config.radius,
-    health: config.health,
-    maxHealth: config.health,
-    speed: config.speed + currentWave * 0.1,
-    radius: config.radius,
-    points: config.points,
-  })
-
-  spawned++
-}
-
-
-function spawnPowerup(x, y) {
-  const types = Object.keys(POWERUP_TYPES)
-  const type = types[Math.floor(Math.random() * types.length)]
-
-  powerups.push({
-    type,
-    x,
-    y,
-    radius: 12,
-    speed: 1.5,
-  })
-}
-
-function spawnBoss() {
-  let config = BOSS_CONFIG
-  let type = 'void'
-
-  if (currentWave === 8) {
-    config = BOSS3_CONFIG
-    type = 'titan'
-  } else if (currentWave === 9) {
-    config = BOSS4_CONFIG
-    type = 'frost'
-  } else if (currentWave === 10) {
-    config = BOSS2_CONFIG
-    type = 'shadow'
-  } else if (currentWave === 15) {
-    config = BOSS5_CONFIG
-    type = 'overlord'
-  }
-
-  boss = {
-    type,
-    x: WIDTH / 2,
-    y: 100,
-    health: config.maxHealth,
-    maxHealth: config.maxHealth,
-    direction: 1,
-  }
-
-  spawned = currentWave * 5
-}
-
-function finishGame(won) {
-  running = false
-  setVictory(won)
-  setGameOver(true)
-
-  if (won) {
-    playSound('victory')
-  } else {
-    playSound('gameOver')
-  }
-}
-    
-
-    function loop() {
-      if (!running) return
-      if (pauseRef.current) {
-    animationId = requestAnimationFrame(loop)
-    return
-  }
-
-      frame++
-
-      const background = ctx.createLinearGradient(0, 0, 0, HEIGHT)
-      background.addColorStop(0, '#090d22')
-      background.addColorStop(1, '#030510')
-      ctx.fillStyle = background
-      ctx.fillRect(0, 0, WIDTH, HEIGHT)
-
-      // Starfield
-      ctx.fillStyle = '#d7eaff'
-
-      stars.forEach((star) => {
-        star.y += star.speed
-
-        if (star.y > HEIGHT) {
-          star.y = 0
-          star.x = Math.random() * WIDTH
-        }
-
-        ctx.globalAlpha = 0.4 + star.speed / 4
-        ctx.fillRect(star.x, star.y, star.size, star.size)
-      })
-
-      ctx.globalAlpha = 1
-
-      // Player movement
-      if (keys.arrowleft || keys.a) player.x -= 5
-      if (keys.arrowright || keys.d) player.x += 5
-      if (keys.arrowup || keys.w) player.y -= 5
-      if (keys.arrowdown || keys.s) player.y += 5
-
-      player.x = Math.max(22, Math.min(WIDTH - 22, player.x))
-      player.y = Math.max(30, Math.min(HEIGHT - 30, player.y))
-
-      // Shooting with power-up support
-      const rapidFireActive =
-        activePowerups.rapidFire > Date.now()
-
-      const tripleShotActive =
-        activePowerups.tripleShot > Date.now()
-
-      const damageBoostActive =
-        activePowerups.damageBoost > Date.now()
-
-      const shotInterval = rapidFireActive ? 4 : 12
-
-      if (keys[' '] && frame - lastShot > shotInterval) {
-        const bulletDamage = damageBoostActive
-  ? GAME_CONFIG.combat.boostedBulletDamage
-  : GAME_CONFIG.combat.normalBulletDamage
-playSound('shoot')
-        if (tripleShotActive) {
-          bullets.push(
-            {
-              x: player.x - 12,
-              y: player.y - 22,
-              speed: 8,
-              damage: bulletDamage,
-            },
-            {
-              x: player.x,
-              y: player.y - 22,
-              speed: 8,
-              damage: bulletDamage,
-            },
-            {
-              x: player.x + 12,
-              y: player.y - 22,
-              speed: 8,
-              damage: bulletDamage,
-            }
-          )
-        } else {
-          bullets.push({
-            x: player.x,
-            y: player.y - 22,
-            speed: 8,
-            damage: bulletDamage,
-          })
-        }
-
-        lastShot = frame
+    const handleKeyDown = (e) => {
+      keysRef.current[e.key.toLowerCase()] = true;
+      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+        setIsPaused(prev => !prev);
       }
-
-
-      bullets.forEach((bullet) => {
-        bullet.y -= bullet.speed
-        ctx.fillStyle = '#50e8ff'
-        ctx.shadowColor = '#50e8ff'
-        ctx.shadowBlur = 12
-        ctx.fillRect(bullet.x - 2, bullet.y, 4, 15)
-      })
-
-      ctx.shadowBlur = 0
-      bullets = bullets.filter((bullet) => bullet.y > -20)
-
-      // Spawn progressively more enemies
-      const waveTarget = currentWave * 5
-      
-
-if (
-  [5, 8, 9, 10, 15].includes(currentWave) &&
-  !boss &&
-  !bossWavesSpawned.includes(currentWave)
-) {
-  bossWavesSpawned.push(currentWave)
-  spawnBoss()
-}
-const isBossWave = [5, 8, 9, 10, 15].includes(currentWave)
-     const spawnInterval = Math.max(20, 55 - currentWave * 3)
-
-      if (!isBossWave &&
-          spawned < waveTarget &&
-          frame % spawnInterval === 0
-      ) {
-        spawnEnemy()
+      if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
       }
-
-// Move and draw the boss
-
-if (boss) {
-  const config = getBossConfig(boss)
-
-  boss.x += config.speed * boss.direction
-
-  if (boss.x >= WIDTH - config.radius) {
-    boss.direction = -1
-  }
-
-  if (boss.x <= config.radius) {
-    boss.direction = 1
-  }
-
-  drawBoss(boss)
-}
-
-
-    // Move enemies, with Slow Motion support
-      const slowMotionActive =
-        activePowerups.slowMotion > Date.now()
-
-      enemies.forEach((enemy) => {
-        enemy.y += slowMotionActive
-          ? enemy.speed * 0.4
-          : enemy.speed
-
-        drawEnemy(enemy)
-      })
-
-
-
- // Move and draw power-ups
-powerups.forEach((powerup) => {
-  powerup.y += powerup.speed
-  drawPowerup(powerup)
-})
-
- // Remove power-ups that leave the screen
-powerups = powerups.filter(
-  (powerup) => powerup.y < HEIGHT + powerup.radius
-)
-
-      // Collect power-ups when the player touches them
-      
-powerups = powerups.filter((powerup) => {
-  const collected =
-    Math.abs(powerup.x - player.x) < powerup.radius + 15 &&
-    Math.abs(powerup.y - player.y) < powerup.radius + 15
-
-  if (!collected) return true
-
-  const type = powerup.type
-  playSound('powerup')
-
-  if (type === 'healthRestore') {
-      setHealth((prevHealth) => Math.min(prevHealth + 1, GAME_CONFIG.player.maxHealth))
-  } else if (type === 'extraLife') {
-  lives = Math.min(lives + 1, 5)
-  } else if (type === 'bomb') {
-    points += enemies.reduce(
-      (total, enemy) => total + (ENEMY_TYPES[enemy.type]?.points ?? 0),0)
-      setScore(points)
-      enemies = []
-  } else if (POWERUP_TYPES[type]) {
-    
-activePowerups[type] =
-  Date.now() + POWERUP_TYPES[type].duration
-
-setActivePowerupNames(
-  Object.keys(activePowerups)
-    .filter((key) => activePowerups[key] > Date.now())
-    .map((key) => POWERUP_TYPES[key].name)
-)
-  }
-
-  return false
-})
-
-// boss collision block
-if (boss) {
-  const config = getBossConfig(boss)
-
-  bullets = bullets.filter((bullet) => {
-    const hitBoss =
-      Math.abs(bullet.x - boss.x) < config.radius &&
-      Math.abs(bullet.y - boss.y) < config.radius
-
-    if (hitBoss) {
-      playSound('bossHit')
-      boss.health -= bullet.damage ?? 10
-      return false
-    }
-
-    return true
-  })
-
-  if (boss.health <= 0) {
-  points += config.points
-
-  // Complete boss mission
-  const bossMission = missions.find((mission) => mission.boss)
-
-  if (
-  bossMission &&
-  currentWave === bossMission.wave &&
-  !completedMissions.includes(bossMission.id)
-) {
-    setCompletedMissions((previous) => {
-      if (previous.includes(bossMission.id)) {
-        return previous
+      if (e.key === 'e' || e.key === 'E') {
+        triggerSpecialAbility();
       }
+    };
 
-      return [...previous, bossMission.id]
-    })
+    const handleKeyUp = (e) => {
+      keysRef.current[e.key.toLowerCase()] = false;
+    };
 
-    points += bossMission.reward
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsPaused(true);
+      }
+    };
 
-    setMissionMessage(
-      `MISSION COMPLETED! +${bossMission.reward} BONUS POINTS`
-    )
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('visibilitychange', handleVisibility);
 
-    setTimeout(() => {
-      setMissionMessage('')
-    }, 3000)
-  }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
-  setScore(points)
-  boss = null
-}
-}
+  // Initialize and run Canvas Combat Engine
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-      // Bullet collisions
+    const ctx = canvas.getContext('2d');
+    const renderer = new GameRenderer(ctx);
 
-      bullets = bullets.filter((bullet) => {
-        const hitIndex = enemies.findIndex((enemy) => {
-          const radius = enemy.radius
+    // Setup Canvas dynamic sizing
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const width = canvas.parentElement.clientWidth;
+      const height = canvas.parentElement.clientHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-          return (
-            Math.abs(bullet.x - enemy.x) < radius &&
-            Math.abs(bullet.y - enemy.y) < radius
-          )
-        })
+    // Engine entities
+    const engine = {
+      width: canvas.parentElement.clientWidth,
+      height: canvas.parentElement.clientHeight,
+      time: 0,
+      lastShotTime: 0,
+      shotsFired: 0,
+      shotsHit: 0,
+      damageTaken: 0,
+      player: {
+        x: canvas.parentElement.clientWidth / 2,
+        y: canvas.parentElement.clientHeight - 80,
+        vx: 0,
+        vy: 0,
+        invulnerableUntil: 0,
+        shieldActive: false,
+        shieldDurationEnd: 0,
+        specialCooldownEnd: 0,
+      },
+      bullets: [],
+      muzzleFlashes: [],
+      screenShake: 0,
+      enemies: [],
+      boss: null,
+      particles: [],
+      floatingTexts: [],
+      powerups: [],
+      stars: Array.from({ length: 90 }, () => ({
+        x: Math.random() * canvas.parentElement.clientWidth,
+        y: Math.random() * canvas.parentElement.clientHeight,
+        size: Math.random() * 2 + 0.5,
+        speed: Math.random() * 1.5 + 0.3,
+        alpha: Math.random() * 0.7 + 0.3,
+        phase: Math.random() * Math.PI * 2,
+        color: Math.random() > 0.8 ? '#00e5ff' : '#ffffff'
+      })),
+      nebulas: [
+        { x: 150, y: 180, radius: 240, color: 'rgba(0, 229, 255, 0.12)', midColor: 'rgba(191, 85, 236, 0.06)', alpha: 0.8 },
+        { x: canvas.parentElement.clientWidth - 180, y: 450, radius: 300, color: 'rgba(255, 0, 85, 0.10)', midColor: 'rgba(255, 165, 2, 0.05)', alpha: 0.7 }
+      ],
+      currentWave: 1,
+      waveSpawnTimer: 0,
+      spawnedInWave: 0,
+      waveTarget: mission?.enemyCount ? Math.ceil(mission.enemyCount / (mission.waveCount || 3)) : 8,
+      defeatedCount: 0,
+      scoreValue: 0,
+      playerHp: effectiveHealth,
+      playerShield: effectiveShield,
+      activeBuffs: {},
+    };
 
-        if (hitIndex !== -1) {
-          const enemy = enemies[hitIndex]
-          enemy.health-=bullet.damage ?? 10
+    gameEngineRef.current = engine;
+    setMaxHealth(effectiveHealth);
+    setHealth(effectiveHealth);
+    setMaxShield(effectiveShield);
+    setShield(effectiveShield);
 
-          
-if (enemy.health <= 0) {
-  playSound('enemyDestroy')
+    // Audio theme start
+    soundManager.playMusic();
 
-  points += ENEMY_TYPES[enemy.type].points
+    let animationFrameId;
 
-  if (Math.random() < 0.2) {
-    spawnPowerup(enemy.x, enemy.y)
-  }
+    // Main Game Loop
+    const renderLoop = (timestamp) => {
+      engine.time = timestamp;
+      const width = canvas.parentElement.clientWidth;
+      const height = canvas.parentElement.clientHeight;
+      engine.width = width;
+      engine.height = height;
 
-  enemies.splice(hitIndex, 1)
-  defeated++
-
-  if (
-    defeated >= missions[currentMission].enemyCount &&
-    !missions[currentMission].boss &&
-    !missionObjectiveCompleted
-  ) {
-    missionObjectiveCompleted = true
-
-    setCompletedMissions((previous) => {
-  const missionId = missions[currentMission].id
-
-  if (previous.includes(missionId)) {
-    return previous
-  }
-
-  return [...previous, missionId]
-})
-
-    const reward = missions[currentMission].reward
-    points += reward
-
-    setScore(points)
-
-    setMissionMessage(
-    `MISSION COMPLETED! +${reward} BONUS POINTS`
-)
-
-    setTimeout(() => {
-        setMissionMessage('')
-    }, 3000)
-  }
-
-  setScore(points)
-}
-
-  return false
-}
-
-return true
-})
-      // Player collisions and missed enemies
-      const remainingEnemies = []
-
-      for (const enemy of enemies) {
-        const radius = ENEMY_TYPES[enemy.type].radius
-
-        const hitPlayer =
-          Math.abs(enemy.x - player.x) < radius + 15 &&
-          Math.abs(enemy.y - player.y) < radius + 15
-
-        if (hitPlayer &&
-          (activePowerups.shield ?? 0) <= Date.now()
-        ) {
-          lives--
-          playSound('playerHit')
-          setHealth(lives)
-
-          if (lives <= 0) {
-            finishGame(false)
-            return
+      if (!isPaused && !gameOver && !victory) {
+        // --- 1. UPDATE PARALLAX BACKGROUND ---
+        engine.stars.forEach(star => {
+          star.y += star.speed;
+          if (star.y > height) {
+            star.y = 0;
+            star.x = Math.random() * width;
           }
-        } else if (enemy.y <= HEIGHT + radius) {
-          remainingEnemies.push(enemy)
+        });
+
+        // --- 2. UPDATE PLAYER POSITION & CONTROLS ---
+        const keys = keysRef.current;
+        const touch = touchStateRef.current;
+        let dx = 0;
+        let dy = 0;
+
+        if (keys['arrowleft'] || keys['a']) dx -= 1;
+        if (keys['arrowright'] || keys['d']) dx += 1;
+        if (keys['arrowup'] || keys['w']) dy -= 1;
+        if (keys['arrowdown'] || keys['s']) dy += 1;
+
+        if (touch.active) {
+          const targetX = touch.x;
+          const targetY = touch.y;
+          const diffX = targetX - engine.player.x;
+          const diffY = targetY - engine.player.y;
+          if (Math.abs(diffX) > 4) dx = Math.sign(diffX);
+          if (Math.abs(diffY) > 4) dy = Math.sign(diffY);
+        }
+
+        // Apply speed
+        const speed = effectiveSpeed * (engine.activeBuffs.overdrive ? 1.4 : 1.0);
+        engine.player.x += dx * speed;
+        engine.player.y += dy * speed;
+
+        // Keep inside bounds
+        engine.player.x = Math.max(30, Math.min(width - 30, engine.player.x));
+        engine.player.y = Math.max(50, Math.min(height - 40, engine.player.y));
+
+        // Auto-firing / Spacebar / Touch fire
+        const fireInterval = 1000 / (effectiveFireRate * (engine.activeBuffs.rapidFire ? 2.2 : 1.0));
+        const shouldFire = keys[' '] || touch.isFiring || keys['enter'];
+
+        if (shouldFire && timestamp - engine.lastShotTime > fireInterval) {
+          engine.lastShotTime = timestamp;
+          engine.shotsFired++;
+          soundManager.playSfx('shoot');
+          engine.screenShake = Math.max(engine.screenShake, 2.0);
+
+          // Cannon tip muzzle flashes
+          engine.muzzleFlashes.push({ x: engine.player.x - 14, y: engine.player.y - 24, color: shipConfig.color || '#00e5ff', life: 5, maxLife: 5 });
+          engine.muzzleFlashes.push({ x: engine.player.x + 14, y: engine.player.y - 24, color: shipConfig.color || '#00e5ff', life: 5, maxLife: 5 });
+
+          const bulletDamage = effectiveDamage * (engine.activeBuffs.overdrive ? 2.0 : 1.0);
+
+          if (engine.activeBuffs.spreadShot) {
+            // 5-way spread shot
+            [-0.3, -0.15, 0, 0.15, 0.3].forEach(angle => {
+              engine.bullets.push({
+                x: engine.player.x,
+                y: engine.player.y - 20,
+                vx: Math.sin(angle) * 12,
+                vy: -Math.cos(angle) * 12,
+                damage: bulletDamage * 0.75,
+                color: '#ff9f43',
+                isEnemy: false
+              });
+            });
+          } else if (engine.activeBuffs.homingMissiles) {
+            // Homing missiles
+            engine.bullets.push({
+              x: engine.player.x - 14,
+              y: engine.player.y - 10,
+              vx: -2,
+              vy: -10,
+              damage: bulletDamage * 1.5,
+              type: 'missile',
+              isEnemy: false
+            });
+            engine.bullets.push({
+              x: engine.player.x + 14,
+              y: engine.player.y - 10,
+              vx: 2,
+              vy: -10,
+              damage: bulletDamage * 1.5,
+              type: 'missile',
+              isEnemy: false
+            });
+          } else {
+            // Dual laser cannons
+            engine.bullets.push({
+              x: engine.player.x - 12,
+              y: engine.player.y - 16,
+              vx: 0,
+              vy: -14,
+              damage: bulletDamage,
+              color: shipConfig.color,
+              isEnemy: false
+            });
+            engine.bullets.push({
+              x: engine.player.x + 12,
+              y: engine.player.y - 16,
+              vx: 0,
+              vy: -14,
+              damage: bulletDamage,
+              color: shipConfig.color,
+              isEnemy: false
+            });
+          }
+        }
+
+        // --- 3. WAVE SPAWNING & BOSS LOGIC ---
+        if (mission?.boss && !engine.boss && engine.currentWave >= (mission.waveCount || 3)) {
+          // Spawn sector boss with multi-phase health
+          const bHp = 1400 + mission.id * 200;
+          engine.boss = {
+            x: width / 2,
+            y: 110,
+            targetX: width / 2,
+            radius: 70,
+            bossType: mission.bossType || 'iron_warden',
+            health: bHp,
+            maxHealth: bHp,
+            speed: 2.2,
+            dir: 1,
+            lastAttackTime: timestamp,
+            attackCharging: false,
+            phase: 1
+          };
+          setBossHp(bHp);
+          setBossMaxHp(bHp);
+          setBossName(mission.bossName || 'Armada Boss');
+          soundManager.playSfx('powerup');
+        } else if (!engine.boss) {
+          // Tactical Squadron Wave Spawning
+          engine.waveSpawnTimer += 16;
+          if (engine.waveSpawnTimer > 1100 && engine.spawnedInWave < engine.waveTarget) {
+            engine.waveSpawnTimer = 0;
+            const squadSize = Math.min(3, engine.waveTarget - engine.spawnedInWave);
+            engine.spawnedInWave += squadSize;
+
+            const allowed = mission?.allowedEnemies || ['scout'];
+            const type = allowed[Math.floor(Math.random() * allowed.length)];
+            const hp = type === 'elite' ? 10 : type === 'tank' ? 6 : type === 'fighter' ? 3 : 2;
+
+            const squadCenterX = Math.random() * (width - 180) + 90;
+            for (let si = 0; si < squadSize; si++) {
+              const offsetX = (si - (squadSize - 1) / 2) * 48;
+              engine.enemies.push({
+                x: squadCenterX + offsetX,
+                y: -35 - Math.abs(offsetX) * 0.4,
+                baseX: squadCenterX + offsetX,
+                phase: Math.random() * Math.PI * 2,
+                swoopSpeed: 0.003 + Math.random() * 0.002,
+                swoopAmp: 25 + Math.random() * 20,
+                vy: 1.6 + Math.random() * 0.6,
+                type,
+                radius: type === 'elite' ? 26 : type === 'tank' ? 24 : 18,
+                health: hp,
+                maxHealth: hp,
+                lastFire: timestamp + 600 + Math.random() * 1000
+              });
+            }
+          }
+
+          // Check if wave cleared
+          if (engine.spawnedInWave >= engine.waveTarget && engine.enemies.length === 0) {
+            if (engine.currentWave < (mission?.waveCount || 3)) {
+              engine.currentWave++;
+              engine.spawnedInWave = 0;
+              setWave(engine.currentWave);
+              engine.floatingTexts.push({
+                x: width / 2,
+                y: height / 2 - 40,
+                text: `WAVE ${engine.currentWave}`,
+                color: '#00e5ff',
+                size: 28,
+                life: 65,
+                maxLife: 65
+              });
+            } else if (!mission?.boss) {
+              // Mission Victory!
+              setVictory(true);
+              soundManager.playSfx('victory');
+            }
+          }
+        }
+
+        // --- 4. UPDATE BOSS ---
+        if (engine.boss) {
+          const b = engine.boss;
+          b.x += b.speed * b.dir;
+          if (b.x < b.radius + 30) b.dir = 1;
+          if (b.x > width - b.radius - 30) b.dir = -1;
+
+          // Boss attack patterns
+          if (timestamp - b.lastAttackTime > 2200) {
+            b.lastAttackTime = timestamp;
+            b.attackCharging = true;
+
+            setTimeout(() => {
+              if (!engine.boss) return;
+              b.attackCharging = false;
+              soundManager.playSfx('laserHeavy');
+
+              // Boss bullet spreads
+              for (let i = -3; i <= 3; i++) {
+                engine.bullets.push({
+                  x: b.x,
+                  y: b.y + b.radius,
+                  vx: i * 2.2,
+                  vy: 6.5,
+                  radius: 7,
+                  color: '#ff0055',
+                  damage: 25,
+                  isEnemy: true
+                });
+              }
+            }, 600);
+          }
+        }
+
+        // --- 5. UPDATE ENEMIES ---
+        for (let i = engine.enemies.length - 1; i >= 0; i--) {
+          const e = engine.enemies[i];
+          if (e.baseX !== undefined) {
+            e.x = e.baseX + Math.sin(timestamp * e.swoopSpeed + e.phase) * e.swoopAmp;
+          } else {
+            e.x += e.vx;
+          }
+          e.y += e.vy;
+
+          if (e.x < 30) e.x = 30;
+          if (e.x > width - 30) e.x = width - 30;
+
+          // Enemy firing
+          if (timestamp - e.lastFire > 2000) {
+            e.lastFire = timestamp + Math.random() * 1000;
+            engine.bullets.push({
+              x: e.x,
+              y: e.y + e.radius,
+              vx: (Math.random() - 0.5) * 1.5,
+              vy: 5.5,
+              radius: 5,
+              color: '#ff4757',
+              damage: 15,
+              isEnemy: true
+            });
+          }
+
+          // Off screen removal
+          if (e.y > height + 40) {
+            engine.enemies.splice(i, 1);
+          }
+        }
+
+        // --- 6. UPDATE BULLETS & HOMING ---
+        for (let i = engine.bullets.length - 1; i >= 0; i--) {
+          const b = engine.bullets[i];
+
+          // Homing logic towards nearest enemy
+          if (b.type === 'missile' && engine.enemies.length > 0) {
+            const target = engine.boss || engine.enemies[0];
+            const angle = Math.atan2(target.y - b.y, target.x - b.x);
+            b.vx += Math.cos(angle) * 0.8;
+            b.vy += Math.sin(angle) * 0.8;
+          }
+
+          b.x += b.vx;
+          b.y += b.vy;
+
+          // Out of screen bounds
+          if (b.y < -30 || b.y > height + 30 || b.x < -30 || b.x > width + 30) {
+            engine.bullets.splice(i, 1);
+          }
+        }
+
+        // --- 7. COLLISION DETECTION ---
+        // Player Bullets hitting Enemies
+        for (let bi = engine.bullets.length - 1; bi >= 0; bi--) {
+          const b = engine.bullets[bi];
+          if (b.isEnemy) continue;
+
+          // Hitting regular enemies
+          for (let ei = engine.enemies.length - 1; ei >= 0; ei--) {
+            const e = engine.enemies[ei];
+            const dist = Math.hypot(b.x - e.x, b.y - e.y);
+            if (dist < e.radius + 6) {
+              e.health -= b.damage;
+              e.hitFlashUntil = timestamp + 110;
+              engine.shotsHit++;
+              engine.bullets.splice(bi, 1);
+              engine.screenShake = Math.max(engine.screenShake, 3.5);
+
+              // High-impact electrical sparks
+              for (let s = 0; s < 6; s++) {
+                const angle = Math.random() * Math.PI * 2;
+                const spd = Math.random() * 5 + 2;
+                engine.particles.push({
+                  x: b.x,
+                  y: b.y,
+                  vx: Math.cos(angle) * spd,
+                  vy: Math.sin(angle) * spd,
+                  color: '#ffd32a',
+                  type: 'spark',
+                  life: 14,
+                  maxLife: 14
+                });
+              }
+
+              if (e.health <= 0) {
+                // Enemy destroyed
+                engine.enemies.splice(ei, 1);
+                engine.defeatedCount++;
+
+                // Dynamic Combo calculation
+                if (timestamp - (engine.lastKillTime || 0) < 2500) {
+                  engine.combo = Math.min(8, (engine.combo || 1) + 1);
+                } else {
+                  engine.combo = 1;
+                }
+                engine.lastKillTime = timestamp;
+
+                const basePts = e.type === 'elite' ? 350 : e.type === 'tank' ? 200 : 100;
+                const pts = basePts * engine.combo;
+                engine.scoreValue += pts;
+                setScore(engine.scoreValue);
+                setEnemiesDefeated(engine.defeatedCount);
+                soundManager.playSfx('enemyDestroy');
+
+                // Explosion & floating score
+                createExplosion(engine, e.x, e.y, '#ff4757', 24, true);
+                engine.floatingTexts.push({
+                  x: e.x,
+                  y: e.y,
+                  text: engine.combo > 1 ? `+${pts} (${engine.combo}x COMBO!)` : `+${pts}`,
+                  color: engine.combo > 1 ? '#ffd700' : '#ffffff',
+                  size: engine.combo > 1 ? 22 : 18,
+                  life: 50,
+                  maxLife: 50
+                });
+
+                // Powerup drop chance (18%)
+                if (Math.random() < 0.22) {
+                  const pKeys = Object.keys(POWERUPS_CONFIG);
+                  const pId = pKeys[Math.floor(Math.random() * pKeys.length)];
+                  const pCfg = POWERUPS_CONFIG[pId];
+                  engine.powerups.push({
+                    x: e.x,
+                    y: e.y,
+                    id: pId,
+                    icon: pCfg.icon,
+                    color: pCfg.color,
+                    duration: pCfg.duration
+                  });
+                }
+              }
+              break;
+            }
+          }
+
+          // Hitting Boss
+          if (engine.boss && bi < engine.bullets.length) {
+            const boss = engine.boss;
+            const dist = Math.hypot(b.x - boss.x, b.y - boss.y);
+            if (dist < boss.radius + 10) {
+              boss.health -= b.damage;
+              boss.hitFlashUntil = timestamp + 110;
+              engine.shotsHit++;
+              engine.bullets.splice(bi, 1);
+              engine.screenShake = Math.max(engine.screenShake, 4.0);
+              setBossHp(Math.max(0, boss.health));
+              createExplosion(engine, b.x, b.y, '#ff0055', 8, false);
+
+              if (boss.health <= 0) {
+                // Boss Defeated!
+                createExplosion(engine, boss.x, boss.y, '#ffd700', 60, true);
+                engine.scoreValue += 2500;
+                setScore(engine.scoreValue);
+                engine.boss = null;
+                setBossHp(0);
+                soundManager.playSfx('victory');
+                setTimeout(() => setVictory(true), 1200);
+              }
+            }
+          }
+        }
+
+        // Enemy Bullets hitting Player
+        const isInvulnerable = timestamp < engine.player.invulnerableUntil;
+        if (!isInvulnerable) {
+          for (let bi = engine.bullets.length - 1; bi >= 0; bi--) {
+            const b = engine.bullets[bi];
+            if (!b.isEnemy) continue;
+
+            const dist = Math.hypot(b.x - engine.player.x, b.y - engine.player.y);
+            if (dist < 26) {
+              engine.bullets.splice(bi, 1);
+              takeDamage(engine, b.damage || 20, timestamp);
+              break;
+            }
+          }
+
+          // Player colliding with enemies
+          for (let ei = engine.enemies.length - 1; ei >= 0; ei--) {
+            const e = engine.enemies[ei];
+            const dist = Math.hypot(e.x - engine.player.x, e.y - engine.player.y);
+            if (dist < e.radius + 20) {
+              takeDamage(engine, 30, timestamp);
+              engine.enemies.splice(ei, 1);
+              createExplosion(engine, e.x, e.y, '#ff4757', 18, true);
+              break;
+            }
+          }
+        }
+
+        // --- 8. COLLECTING POWER-UPS ---
+        for (let pi = engine.powerups.length - 1; pi >= 0; pi--) {
+          const p = engine.powerups[pi];
+          p.y += 1.8;
+
+          // Magnet towards player if close
+          const distToPlayer = Math.hypot(p.x - engine.player.x, p.y - engine.player.y);
+          if (distToPlayer < 140) {
+            p.x += (engine.player.x - p.x) * 0.08;
+            p.y += (engine.player.y - p.y) * 0.08;
+          }
+
+          if (distToPlayer < 36) {
+            // Collected!
+            soundManager.playSfx('powerup');
+            applyPowerup(engine, p.id, timestamp);
+            engine.floatingTexts.push({
+              x: engine.player.x,
+              y: engine.player.y - 30,
+              text: POWERUPS_CONFIG[p.id]?.name || 'POWER-UP!',
+              color: p.color,
+              size: 20,
+              life: 50,
+              maxLife: 50
+            });
+            engine.powerups.splice(pi, 1);
+          } else if (p.y > height + 30) {
+            engine.powerups.splice(pi, 1);
+          }
+        }
+
+        // --- 9. UPDATE PARTICLES & TEXTS ---
+        for (let i = engine.muzzleFlashes.length - 1; i >= 0; i--) {
+          engine.muzzleFlashes[i].life--;
+          if (engine.muzzleFlashes[i].life <= 0) engine.muzzleFlashes.splice(i, 1);
+        }
+
+        for (let i = engine.particles.length - 1; i >= 0; i--) {
+          const pt = engine.particles[i];
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.life--;
+          if (pt.type === 'shockwave') pt.radius += 3.5;
+          if (pt.life <= 0) engine.particles.splice(i, 1);
+        }
+
+        for (let i = engine.floatingTexts.length - 1; i >= 0; i--) {
+          const ft = engine.floatingTexts[i];
+          ft.y -= 1.0;
+          ft.life--;
+          if (ft.life <= 0) engine.floatingTexts.splice(i, 1);
+        }
+
+        // Check powerup expiration
+        Object.keys(engine.activeBuffs).forEach(key => {
+          if (engine.activeBuffs[key] && timestamp > engine.activeBuffs[key]) {
+            delete engine.activeBuffs[key];
+            updateActivePowerupUI(engine);
+          }
+        });
+
+        if (engine.player.shieldActive && timestamp > engine.player.shieldDurationEnd) {
+          engine.player.shieldActive = false;
+          setShieldActive(false);
         }
       }
 
-      enemies = remainingEnemies
+      // --- 10. RENDER FRAME ---
+      ctx.clearRect(0, 0, width, height);
 
-      // Wave completed when all enemies have been spawned and defeated
-      if (spawned >= waveTarget && enemies.length === 0 && !boss) {
-        if (currentWave >= maxWaves) {
-          finishGame(true)
-          return
-        }
-
-        currentWave++
-        spawned = 0
-        defeated = 0
-        setWave(currentWave)
-        const nextMissionIndex = missions.findIndex(
-          (mission) => mission.wave === currentWave
-          )
-
-              if (nextMissionIndex !== -1) {
-        setCurrentMission(nextMissionIndex)
-        missionObjectiveCompleted = false
+      // Screen Shake translation
+      ctx.save();
+      if (engine.screenShake > 0) {
+        const shakeX = (Math.random() - 0.5) * engine.screenShake;
+        const shakeY = (Math.random() - 0.5) * engine.screenShake;
+        ctx.translate(shakeX, shakeY);
+        engine.screenShake *= 0.88;
+        if (engine.screenShake < 0.2) engine.screenShake = 0;
       }
+
+      renderer.drawBackground(width, height, engine.stars, engine.nebulas, engine.time, mission?.sectorId);
+      renderer.drawPowerups(engine.powerups, engine.time);
+      renderer.drawProjectiles(engine.bullets);
+      renderer.drawMuzzleFlashes(engine.muzzleFlashes);
+      renderer.drawParticles(engine.particles);
+
+      engine.enemies.forEach(e => renderer.drawEnemy(e, engine.time));
+      if (engine.boss) renderer.drawBoss(engine.boss, engine.time);
+
+      const isInvuln = timestamp < engine.player.invulnerableUntil;
+      renderer.drawPlayerShip(
+        { ...engine.player, color: shipConfig.color, accentColor: shipConfig.accentColor, shieldActive: engine.player.shieldActive },
+        engine.time,
+        shipConfig.id,
+        isInvuln
+      );
+
+      renderer.drawFloatingTexts(engine.floatingTexts);
+      ctx.restore();
+
+      animationFrameId = requestAnimationFrame(renderLoop);
+    };
+
+    animationFrameId = requestAnimationFrame(renderLoop);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', resizeCanvas);
+      soundManager.pauseMusic();
+    };
+  }, [mission, isPaused, gameOver, victory, effectiveDamage, effectiveFireRate, effectiveHealth, effectiveShield, effectiveSpeed, shipConfig]);
+
+  // Helper: Damage Application with Shield Absorption
+  const takeDamage = (engine, dmg, timestamp) => {
+    if (engine.player.shieldActive) {
+      soundManager.playSfx('shieldHit');
+      engine.floatingTexts.push({ x: engine.player.x, y: engine.player.y - 20, text: 'SHIELD BLOCK', color: '#00e5ff', size: 16, life: 30, maxLife: 30 });
+      return;
     }
 
-    drawShip(player.x, player.y)
+    soundManager.playSfx('playerHit');
+    engine.player.invulnerableUntil = timestamp + 1400; // 1.4s immunity window
+    engine.damageTaken += dmg;
 
-    // In-game information
-    ctx.fillStyle = '#50e8ff'
-    ctx.font = '14px Arial'
-    ctx.fillText('MOVE: WASD / ARROWS', 18, 28)
-    ctx.fillText('SHOOT: SPACE', 18, 49)
-
-    ctx.fillStyle = '#ffffff'
-    ctx.fillText(`ENEMIES: ${defeated}/${waveTarget}`, WIDTH - 170, 28)
-
-    const currentPowerupNames = Object.keys(activePowerups)
-      .filter((key) => activePowerups[key] > Date.now())
-      .map((key) => POWERUP_TYPES[key].name)
-
-    const powerupNamesKey = currentPowerupNames.join(',')
-
-    if (powerupNamesKey !== lastPowerupNames) {
-      lastPowerupNames = powerupNamesKey
-      setActivePowerupNames(currentPowerupNames)
+    // Absorb into shield first if available
+    if (engine.playerShield > 0) {
+      const absorbed = Math.min(engine.playerShield, dmg);
+      engine.playerShield -= absorbed;
+      dmg -= absorbed;
+      setShield(Math.max(0, engine.playerShield));
     }
 
-    animationId = requestAnimationFrame(loop)
-  }
-
-  loop()
-
-  return () => {
-    running = false
-    cancelAnimationFrame(animationId)
-    window.removeEventListener('keydown', handleKeyDown)
-    window.removeEventListener('keyup', handleKeyUp)
-  }
-}, [restartKey])
-
- const getMissionStatus = (mission, index) => {
-    if (completedMissions.includes(mission.id)) {
-      return 'COMPLETED'
+    if (dmg > 0) {
+      engine.playerHp -= dmg;
+      setHealth(Math.max(0, engine.playerHp));
     }
 
-    if (index === currentMission) {
-      return 'ACTIVE'
-    }
+    createExplosion(engine, engine.player.x, engine.player.y, '#ff4757', 15, false);
 
-    return 'LOCKED'
-  }
+    if (engine.playerHp <= 0) {
+      soundManager.playSfx('gameOver');
+      setGameOver(true);
+    }
+  };
+
+  // Helper: Particle Explosion Generation
+  const createExplosion = (engine, x, y, color, count, shockwave = false) => {
+    if (shockwave) {
+      engine.particles.push({ x, y, radius: 10, color, type: 'shockwave', life: 25, maxLife: 25, vx: 0, vy: 0 });
+    }
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 5 + 1.5;
+      engine.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        size: Math.random() * 3 + 1,
+        color,
+        life: 30 + Math.random() * 20,
+        maxLife: 50
+      });
+    }
+  };
+
+  // Helper: Apply Power-Up effect
+  const applyPowerup = (engine, id, timestamp) => {
+    const cfg = POWERUPS_CONFIG[id];
+    if (!cfg) return;
+
+    if (id === 'shieldPulse') {
+      engine.player.shieldActive = true;
+      engine.player.shieldDurationEnd = timestamp + cfg.duration;
+      setShieldActive(true);
+    } else if (id === 'repairDrone') {
+      engine.playerHp = Math.min(effectiveHealth, engine.playerHp + 45);
+      setHealth(engine.playerHp);
+    } else if (id === 'empBlast') {
+      // Clear all hostile bullets
+      engine.bullets = engine.bullets.filter(b => !b.isEnemy);
+      createExplosion(engine, engine.width / 2, engine.height / 2, '#a55eea', 40, true);
+    } else if (id === 'emergencyWarp') {
+      engine.player.x = engine.width / 2;
+      engine.player.y = engine.height - 80;
+      engine.player.invulnerableUntil = timestamp + 2500;
+      createExplosion(engine, engine.player.x, engine.player.y, '#1e90ff', 25, true);
+    } else {
+      // Timed buffs: rapidFire, spreadShot, homingMissiles, overdrive
+      engine.activeBuffs[id] = timestamp + cfg.duration;
+    }
+    updateActivePowerupUI(engine);
+  };
+
+  const updateActivePowerupUI = (engine) => {
+    const list = Object.keys(engine.activeBuffs).map(k => ({
+      id: k,
+      name: POWERUPS_CONFIG[k]?.name,
+      icon: POWERUPS_CONFIG[k]?.icon,
+      color: POWERUPS_CONFIG[k]?.color
+    }));
+    setActivePowerups(list);
+  };
+
+  // Special Ship Ability Trigger
+  const triggerSpecialAbility = () => {
+    const engine = gameEngineRef.current;
+    if (!engine || Date.now() < engine.player.specialCooldownEnd) return;
+
+    engine.player.specialCooldownEnd = Date.now() + shipConfig.baseStats.specialCd * 1000;
+    setSpecialCooldown(shipConfig.baseStats.specialCd);
+
+    // Cooldown ticker
+    const timer = setInterval(() => {
+      setSpecialCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    soundManager.playSfx('powerup');
+    engine.floatingTexts.push({
+      x: engine.player.x,
+      y: engine.player.y - 40,
+      text: shipConfig.specialName.toUpperCase(),
+      color: shipConfig.color,
+      size: 22,
+      life: 50,
+      maxLife: 50
+    });
+
+    if (selectedShipId === 'guardian') {
+      applyPowerup(engine, 'shieldPulse', engine.time);
+    } else if (selectedShipId === 'striker') {
+      applyPowerup(engine, 'homingMissiles', engine.time);
+    } else if (selectedShipId === 'support') {
+      applyPowerup(engine, 'repairDrone', engine.time);
+      applyPowerup(engine, 'empBlast', engine.time);
+    } else if (selectedShipId === 'experimental') {
+      applyPowerup(engine, 'overdrive', engine.time);
+      applyPowerup(engine, 'spreadShot', engine.time);
+    } else {
+      // Interceptor hyper dash
+      engine.player.invulnerableUntil = engine.time + 3000;
+      applyPowerup(engine, 'rapidFire', engine.time);
+    }
+  };
+
+  // Rewarded Ad Simulation (Per VELoop Specification)
+  const handleWatchAd = (type) => {
+    setAdModal({ type, countdown: 4 });
+    const interval = setInterval(() => {
+      setAdModal(prev => {
+        if (!prev) return null;
+        if (prev.countdown <= 1) {
+          clearInterval(interval);
+          grantAdReward(type);
+          return null;
+        }
+        return { ...prev, countdown: prev.countdown - 1 };
+      });
+    }, 1000);
+  };
+
+  const grantAdReward = (type) => {
+    soundManager.playSfx('victory');
+    if (type === 'revive') {
+      const engine = gameEngineRef.current;
+      if (engine) {
+        engine.playerHp = effectiveHealth;
+        engine.player.invulnerableUntil = engine.time + 3000;
+        setHealth(effectiveHealth);
+        setGameOver(false);
+        setReviveAvailable(false);
+      }
+    } else if (type === 'double_credits') {
+      const bonus = (mission?.rewards?.credits || 150) * 2;
+      onUpdatePlayerData({ credits: (playerData?.credits || 0) + bonus });
+      alert(`🎉 2X REWARD GRANTED! Received ${bonus} Credits.`);
+    } else if (type === 'double_score') {
+      setScore(prev => prev * 2);
+      alert(`🎉 2X SCORE APPLIED! New High Score recorded.`);
+    }
+  };
+
+  // Complete Mission and persist rewards
+  const handleClaimVictory = () => {
+    const accuracy = missionStats.shotsFired > 0 
+      ? Math.round((missionStats.shotsHit / missionStats.shotsFired) * 100) 
+      : 100;
+    
+    // Calculate Stars
+    let starsEarned = 1;
+    if (accuracy >= 65 || health >= maxHealth * 0.6) starsEarned = 2;
+    if (accuracy >= 80 && health >= maxHealth * 0.8) starsEarned = 3;
+
+    const baseCredits = mission?.rewards?.credits || 120;
+    const baseCores = mission?.rewards?.energyCores || 0;
+    const baseXp = mission?.rewards?.xp || 75;
+
+    const newCredits = (playerData?.credits || 0) + baseCredits;
+    const newCores = (playerData?.energyCores || 0) + baseCores;
+    const newXp = (playerData?.xp || 0) + baseXp;
+    const nextMissionUnlock = Math.max(playerData?.highestMissionUnlocked || 1, (mission?.id || 1) + 1);
+
+    const completed = {
+      ...(playerData?.completedMissions || {}),
+      [mission.id]: {
+        stars: Math.max(starsEarned, playerData?.completedMissions?.[mission.id]?.stars || 0),
+        highScore: Math.max(score, playerData?.completedMissions?.[mission.id]?.highScore || 0)
+      }
+    };
+
+    onUpdatePlayerData({
+      credits: newCredits,
+      energyCores: newCores,
+      xp: newXp,
+      highestMissionUnlocked: nextMissionUnlock,
+      completedMissions: completed
+    });
+
+    onBack();
+  };
 
   return (
-    <main className="game-screen">
-  <header className="game-header">
-    <button className="game-back" onClick={onBack}>
-      ← HOME
-    </button>
-
-    <h2>MISSION {String(missions[currentMission]?.id).padStart(2, '0')}: {missions[currentMission]?.name}</h2>
-
-    <div className="mission-info">
-    <p>{missions[currentMission]?.description}</p>
-    <p>OBJECTIVE: {missions[currentMission]?.objective}</p>
-    <p>REWARD: {missions[currentMission]?.reward} POINTS</p>
-    </div>
-
-    <div className="mission-progress">MISSION PROGRESS: {currentMission + 1} / {missions.length}</div>
-    <div className="mission-status-panel">
-  <h3>MISSION STATUS</h3>
-
-  {missions.map((mission, index) => {
-    const status = getMissionStatus(mission, index)
-
-    return (
-      <div className={`mission-status-item ${status.toLowerCase()}`} key={mission.id}>
-        <span>
-          {String(mission.id).padStart(2, '0')} - {mission.name}
-        </span>
-
-        <span className="mission-status-label">
-          {status}
-        </span>
-      </div>
-    )
-  })}
-</div>
-    {missionMessage && (
-    <div className="mission-completed">
-    {missionMessage}
-    </div>
-    )}
-    
-    <div className="audio-controls">
-  <button
-    onClick={() => setMusicEnabled((previous) => !previous)}
-  >
-    MUSIC: {musicEnabled ? 'ON' : 'OFF'}
-  </button>
-
-  <button
-    onClick={() => setSoundEffectsEnabled((previous) => !previous)}
-  >
-    SOUND FX: {soundEffectsEnabled ? 'ON' : 'OFF'}
-  </button>
-</div>
-    <div className="game-hud">
-
-      <span>SCORE: {score}</span>
-      <span>WAVE: {wave}/15</span>
-      <div className="pause-controls">
-  {!isPaused ? (
-    <button onClick={() => setIsPaused(true)}>
-      PAUSE
-    </button>
-  ) : (
-    <button onClick={() => setIsPaused(false)}>
-      RESUME
-    </button>
-  )}
-</div>
-      <span>
-        HULL: {'♥'.repeat(Math.min(GAME_CONFIG.player.maxHealth, Math.max(0, health)))}
-        {'♡'.repeat(Math.max(0, 3 - health))}
-      </span>
-    </div>
-  </header>
-      
-
-<div className="active-powerups">
-  {activePowerupNames.map((name) => (
-    <span className="powerup-badge" key={name}>
-      {name}
-    </span>
-  ))}
-</div>
-
-      <div className="canvas-wrapper">
-        <canvas
-          ref={canvasRef}
-          width={WIDTH}
-          height={HEIGHT}
-          aria-label="Space shooter game"
-        />
-        
-        {isPaused && (
-  <div className="pause-overlay">
-    <div className="pause-menu">
-      <h2>GAME PAUSED</h2>
-      <p>Your mission is on hold.</p>
-
-      <button onClick={() => setIsPaused(false)}>
-        RESUME GAME
-      </button>
-
-      <button
-        onClick={() => {
-          setScore(0)
-          setHealth(GAME_CONFIG.player.maxHealth)
-          setWave(1)
-          setCurrentMission(0)
-          setGameOver(false)
-          setVictory(false)
-          setIsPaused(false)
-          setRestartKey((value) => value + 1)
+    <div className={`game-viewport ${isFullscreen ? 'fullscreen-mode' : ''}`} ref={containerRef}>
+      {/* Immersive Sci-Fi Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="game-canvas"
+        onPointerDown={(e) => {
+          const rect = canvasRef.current.getBoundingClientRect();
+          touchStateRef.current = {
+            active: true,
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+            isFiring: true
+          };
         }}
-      >
-        RESTART MISSION
-      </button>
+        onPointerMove={(e) => {
+          if (!touchStateRef.current.active) return;
+          const rect = canvasRef.current.getBoundingClientRect();
+          touchStateRef.current.x = e.clientX - rect.left;
+          touchStateRef.current.y = e.clientY - rect.top;
+        }}
+        onPointerUp={() => {
+          touchStateRef.current.active = false;
+        }}
+      />
 
-      <button onClick={onBack}>
-        BACK TO HOME
-      </button>
-    </div>
-  </div>
-)}
+      {/* Futuristic Holographic HUD Overlay */}
+      <header className="game-hud-overlay">
+        <div className="hud-left">
+          <button className="hud-icon-btn" onClick={onBack} title="Abandon Mission">
+            ◀ EXIT
+          </button>
+          <div className="hud-mission-info">
+            <span className="hud-mission-tag">M-{mission?.id || 1}</span>
+            <span className="hud-mission-title">{mission?.name || 'SECTOR PATROL'}</span>
+          </div>
+        </div>
 
-        {gameOver && (
-          <div className="game-over">
-            <h2>{victory ? 'GALAXY SECURED!' : 'SHIP DESTROYED'}</h2>
-            <p>{victory ? 'All 15 waves completed!' : 'Mission failed!'}</p>
-            <p>Final score: {score}</p>
+        <div className="hud-center">
+          {/* Boss Health Bar if Active */}
+          {bossHp !== null && bossHp > 0 && (
+            <div className="hud-boss-bar-container">
+              <div className="boss-title">⚠️ {bossName} ⚠️</div>
+              <div className="boss-bar-track">
+                <div 
+                  className="boss-bar-fill" 
+                  style={{ width: `${Math.max(0, (bossHp / bossMaxHp) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
 
-            <button
-              onClick={() => {
-                setScore(0)
-                setHealth(GAME_CONFIG.player.maxHealth)
-                setWave(1)
-                setCurrentMission(0)
-                setGameOver(false)
-                setVictory(false)
-                setRestartKey((value) => value + 1)
-              }}
-            >
-              PLAY AGAIN
+          {/* Vitals: Health & Kinetic Shield */}
+          <div className="hud-vitals">
+            <div className="vital-group">
+              <span className="vital-label">HULL</span>
+              <div className="vital-bar-track health-track">
+                <div 
+                  className="vital-bar-fill health-fill" 
+                  style={{ width: `${Math.max(0, (health / maxHealth) * 100)}%` }}
+                />
+              </div>
+              <span className="vital-num">{Math.round(health)}/{maxHealth}</span>
+            </div>
+
+            <div className="vital-group">
+              <span className="vital-label">SHIELD</span>
+              <div className="vital-bar-track shield-track">
+                <div 
+                  className="vital-bar-fill shield-fill" 
+                  style={{ width: `${Math.max(0, (shield / maxShield) * 100)}%` }}
+                />
+              </div>
+              <span className="vital-num">{Math.round(shield)}/{maxShield}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="hud-right">
+          <div className="hud-score-display">
+            <small>SCORE</small>
+            <span>{score.toLocaleString()}</span>
+          </div>
+
+          <div className="hud-actions">
+            <button className="hud-icon-btn" onClick={() => setIsPaused(!isPaused)}>
+              {isPaused ? '▶' : '⏸'}
             </button>
-
-            <button className="game-back" onClick={onBack}>
-              BACK HOME
+            <button className="hud-icon-btn" onClick={toggleFullscreen}>
+              {isFullscreen ? '🗗' : '⛶'}
             </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Active Power-up Status Badges */}
+      <div className="active-powerups-ribbon">
+        {activePowerups.map((p, idx) => (
+          <div key={idx} className="powerup-badge" style={{ borderColor: p.color }}>
+            <span className="powerup-badge-icon">{p.icon}</span>
+            <span className="powerup-badge-name">{p.name}</span>
+          </div>
+        ))}
+        {shieldActive && (
+          <div className="powerup-badge" style={{ borderColor: '#00e5ff' }}>
+            <span className="powerup-badge-icon">🛡️</span>
+            <span className="powerup-badge-name">INVULNERABLE</span>
           </div>
         )}
       </div>
 
-      <p className="game-tip">
-        Destroy enemies to advance. Scouts give 10 points, fighters 20,
-        and tanks 40. Survive all 15 waves!
-      </p>
-    </main>
-  )
+      {/* Mobile On-Screen Action Touch Controls */}
+      <div className="mobile-touch-hud">
+        <button 
+          className={`touch-ability-btn ${specialCooldown > 0 ? 'cooling' : ''}`}
+          onClick={triggerSpecialAbility}
+          disabled={specialCooldown > 0}
+        >
+          <span className="ability-icon">⚡</span>
+          <span className="ability-text">
+            {specialCooldown > 0 ? `${specialCooldown}s` : shipConfig.specialName}
+          </span>
+        </button>
+
+        <button 
+          className="touch-fire-toggle-btn"
+          onClick={() => {
+            touchStateRef.current.isFiring = !touchStateRef.current.isFiring;
+          }}
+        >
+          {touchStateRef.current.isFiring ? 'AUTO-FIRE ON' : 'FIRE OFF'}
+        </button>
+      </div>
+
+      {/* PAUSE MODAL */}
+      {isPaused && (
+        <div className="game-overlay-backdrop">
+          <div className="sci-fi-dialog">
+            <h2>SYSTEM PAUSED</h2>
+            <p>TACTICAL RECONNAISSANCE SUSPENDED</p>
+            <div className="dialog-buttons">
+              <button className="dialog-btn primary" onClick={() => setIsPaused(false)}>RESUME MISSION</button>
+              <button className="dialog-btn" onClick={toggleFullscreen}>TOGGLE FULLSCREEN</button>
+              <button className="dialog-btn danger" onClick={onBack}>ABANDON TO HANGAR</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MISSION FAILED / GAME OVER MODAL WITH REWARDED AD REVIVE */}
+      {gameOver && (
+        <div className="game-overlay-backdrop">
+          <div className="sci-fi-dialog failed">
+            <div className="dialog-header-glow red">CRITICAL FAILURE</div>
+            <h2>VESSEL DESTROYED</h2>
+            <p>Hull integrity compromised in {mission?.name || 'Sector'}.</p>
+            <div className="dialog-stats-summary">
+              <div>SCORE: <b>{score.toLocaleString()}</b></div>
+              <div>ENEMIES DESTROYED: <b>{enemiesDefeated}</b></div>
+            </div>
+
+            <div className="dialog-buttons">
+              {reviveAvailable && (
+                <button className="dialog-btn special-ad-btn" onClick={() => handleWatchAd('revive')}>
+                  📺 WATCH AD & REVIVE AT CHECKPOINT (100% HP)
+                </button>
+              )}
+              <button className="dialog-btn primary" onClick={() => window.location.reload()}>
+                RESTART MISSION
+              </button>
+              <button className="dialog-btn" onClick={onBack}>
+                RETURN TO HANGAR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MISSION VICTORY MODAL WITH REWARDED AD MULTIPLIERS */}
+      {victory && (
+        <div className="game-overlay-backdrop">
+          <div className="sci-fi-dialog victory">
+            <div className="dialog-header-glow green">MISSION ACCOMPLISHED</div>
+            <h2>SECTOR SECURED</h2>
+            
+            <div className="stars-row">
+              <span className="star-glow">★</span>
+              <span className="star-glow">★</span>
+              <span className="star-glow">★</span>
+            </div>
+
+            <div className="dialog-stats-summary">
+              <div>FINAL COMBAT SCORE: <b>{score.toLocaleString()}</b></div>
+              <div>BASE CREDITS EARNED: <b>+{mission?.rewards?.credits || 120}</b></div>
+              <div>EXPERIENCE (XP): <b>+{mission?.rewards?.xp || 75} XP</b></div>
+              {mission?.rewards?.energyCores > 0 && (
+                <div>ENERGY CORES: <b>+{mission.rewards.energyCores} ⚡</b></div>
+              )}
+            </div>
+
+            <div className="dialog-buttons">
+              <button className="dialog-btn special-ad-btn" onClick={() => handleWatchAd('double_credits')}>
+                📺 WATCH AD → DOUBLE CREDITS (2X)
+              </button>
+              <button className="dialog-btn special-ad-btn" onClick={() => handleWatchAd('double_score')}>
+                📺 WATCH AD → DOUBLE SCORE (2X)
+              </button>
+              <button className="dialog-btn primary" onClick={handleClaimVictory}>
+                CLAIM REWARDS & CONTINUE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SIMULATED VELOOP REWARDED AD MODAL */}
+      {adModal && (
+        <div className="ad-sim-backdrop">
+          <div className="ad-sim-box">
+            <div className="ad-sim-top">
+              <span className="ad-sponsored-tag">SPONSORED REWARD AD</span>
+              <span className="ad-countdown">Reward in: {adModal.countdown}s</span>
+            </div>
+            <div className="ad-sim-content">
+              <h3>VELoop Rewards Network</h3>
+              <p>Simulating premium high-engagement video advertisement playback...</p>
+              <div className="ad-spinner"></div>
+            </div>
+            <div className="ad-sim-footer">
+              <small>VELoop authoritative ad verification in progress...</small>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

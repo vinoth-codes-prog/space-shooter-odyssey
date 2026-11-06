@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow-void" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="void-hull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#050014" />
+      <stop offset="40%" stop-color="#2e1065" />
+      <stop offset="70%" stop-color="#3b0764" />
+      <stop offset="100%" stop-color="#050014" />
+    </linearGradient>
+    <radialGradient id="singularity-core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#e879f9" />
+      <stop offset="70%" stop-color="#9333ea" />
+      <stop offset="100%" stop-color="#3b0764" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Dark Energy Engine Trail -->
+  <g filter="url(#glow-void)">
+    <path d="M 112,185 Q 128,255 128,256 Q 128,255 144,185 Z" fill="#d946ef" opacity="0.9" />
+    <path d="M 64,180 Q 72,235 72,238 Q 72,235 80,180 Z" fill="#a855f7" opacity="0.8" />
+    <path d="M 176,180 Q 184,235 184,238 Q 184,235 192,180 Z" fill="#a855f7" opacity="0.8" />
+  </g>
+
+  <g id="void-body">
+    <!-- Outer Detached Levitating Wing Blades -->
+    <path d="M 230,90 Q 256,150 220,185 Q 210,140 220,100 Z" fill="url(#void-hull)" stroke="#f472b6" stroke-width="2" filter="url(#glow-void)" />
+    <path d="M 26,90 Q 0,150 36,185 Q 46,140 36,100 Z" fill="url(#void-hull)" stroke="#f472b6" stroke-width="2" filter="url(#glow-void)" />
+
+    <!-- Main Obsidian Vessel -->
+    <path d="M 128,10 
+             C 150,45 185,90 205,145 
+             C 215,175 195,195 165,190 
+             L 142,175 
+             L 136,195 
+             L 120,195 
+             L 114,175 
+             L 91,190 
+             C 61,195 41,175 51,145 
+             C 71,90 106,45 128,10 Z" 
+          fill="url(#void-hull)" stroke="#ffd700" stroke-width="2.5" />
+
+    <!-- Pulsing Singularity Black Hole Core -->
+    <circle cx="128" cy="115" r="32" fill="url(#singularity-core)" filter="url(#glow-void)" />
+    <circle cx="128" cy="115" r="16" fill="#000000" stroke="#f472b6" stroke-width="2" />
+    <circle cx="128" cy="115" r="5" fill="#ffffff" filter="url(#glow-void)" />
+
+    <!-- Golden Orbital Energy Rings -->
+    <ellipse cx="128" cy="115" rx="42" ry="14" fill="none" stroke="#ffd700" stroke-width="2" transform="rotate(-25 128 115)" filter="url(#glow-void)" />
+    <ellipse cx="128" cy="115" rx="42" ry="14" fill="none" stroke="#e879f9" stroke-width="1.5" transform="rotate(25 128 115)" />
+  </g>
+</svg>

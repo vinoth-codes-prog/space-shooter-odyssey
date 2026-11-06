@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="striker-hull" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2a050d" />
+      <stop offset="30%" stop-color="#7f1d1d" />
+      <stop offset="50%" stop-color="#b91c1c" />
+      <stop offset="70%" stop-color="#7f1d1d" />
+      <stop offset="100%" stop-color="#2a050d" />
+    </linearGradient>
+    <linearGradient id="striker-flame" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#f59e0b" />
+      <stop offset="70%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="rgba(239,68,68,0)" />
+    </linearGradient>
+  </defs>
+
+  <!-- Heavy Thruster Fire -->
+  <g filter="url(#glow-red)">
+    <path d="M 80,185 Q 90,250 90,254 Q 90,250 100,185 Z" fill="url(#striker-flame)" />
+    <path d="M 156,185 Q 166,250 166,254 Q 166,250 176,185 Z" fill="url(#striker-flame)" />
+    <path d="M 120,190 Q 128,245 128,250 Q 128,245 136,190 Z" fill="url(#striker-flame)" opacity="0.8" />
+  </g>
+
+  <!-- Razor Hull -->
+  <g id="striker-body">
+    <!-- Forward-Swept Outer Wings -->
+    <path d="M 128,12 
+             C 142,35 158,70 180,95 
+             C 210,120 248,125 254,140 
+             C 256,150 236,165 210,160 
+             L 190,145 
+             L 182,185 
+             L 155,188 
+             L 140,195 
+             L 116,195 
+             L 101,188 
+             L 74,185 
+             L 66,145 
+             L 46,160 
+             C 20,165 0,150 2,140 
+             C 8,125 46,120 76,95 
+             C 98,70 114,35 128,12 Z" 
+          fill="url(#striker-hull)" stroke="#f87171" stroke-width="2.5" />
+
+    <!-- Twin Heavy Gatling Barrels -->
+    <rect x="52" y="70" width="8" height="60" rx="3" fill="#18181b" stroke="#ef4444" stroke-width="1.5" />
+    <rect x="196" y="70" width="8" height="60" rx="3" fill="#18181b" stroke="#ef4444" stroke-width="1.5" />
+    <circle cx="56" cy="68" r="3" fill="#fbbf24" filter="url(#glow-red)" />
+    <circle cx="200" cy="68" r="3" fill="#fbbf24" filter="url(#glow-red)" />
+
+    <!-- Glowing Armor Edges -->
+    <path d="M 128,30 L 170,100 L 220,135" stroke="#fca5a5" stroke-width="2" fill="none" filter="url(#glow-red)" />
+    <path d="M 128,30 L 86,100 L 36,135" stroke="#fca5a5" stroke-width="2" fill="none" filter="url(#glow-red)" />
+
+    <!-- Glowing Orange Cockpit Canopy -->
+    <ellipse cx="128" cy="85" rx="12" ry="32" fill="#450a0a" stroke="#f97316" stroke-width="2" />
+    <ellipse cx="128" cy="85" rx="7" ry="22" fill="#fbbf24" opacity="0.8" filter="url(#glow-red)" />
+    <ellipse cx="126" cy="78" rx="3" ry="10" fill="#ffffff" opacity="0.9" />
+  </g>
+</svg>

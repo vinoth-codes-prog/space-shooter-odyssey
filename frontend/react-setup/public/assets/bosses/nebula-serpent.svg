@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow-serpent" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Serpentine Segmented Body Coil -->
+  <path d="M 60,35 Q 20,80 70,120 Q 140,150 128,245 Q 116,150 186,120 Q 236,80 196,35 Z" fill="#2e1065" stroke="#c084fc" stroke-width="3" />
+  
+  <!-- Biomechanical Alien Vertebrae Plates -->
+  <circle cx="128" cy="70" r="28" fill="#4c1d95" stroke="#e879f9" stroke-width="2.5" />
+  <circle cx="128" cy="125" r="24" fill="#581c87" stroke="#e879f9" stroke-width="2.5" />
+  <circle cx="128" cy="175" r="20" fill="#6b21a8" stroke="#e879f9" stroke-width="2.5" />
+
+  <!-- Viper Head Crest -->
+  <path d="M 128,252 L 158,185 L 128,198 L 98,185 Z" fill="#701a75" stroke="#f472b6" stroke-width="3" />
+
+  <!-- Glowing Cyan Alien Eyes -->
+  <circle cx="112" cy="210" r="8" fill="#00e5ff" filter="url(#glow-serpent)" />
+  <circle cx="144" cy="210" r="8" fill="#00e5ff" filter="url(#glow-serpent)" />
+  <circle cx="112" cy="210" r="3" fill="#ffffff" />
+  <circle cx="144" cy="210" r="3" fill="#ffffff" />
+
+  <!-- Venom Plasma Fang Emitters -->
+  <path d="M 104,235 L 100,255 L 110,240 Z" fill="#38bdf8" filter="url(#glow-serpent)" />
+  <path d="M 152,235 L 156,255 L 146,240 Z" fill="#38bdf8" filter="url(#glow-serpent)" />
+</svg>

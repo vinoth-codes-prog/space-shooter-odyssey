@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow-void-boss" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Crown / Imperial Citadel Outer Spines -->
+  <path d="M 128,252 
+           L 182,185 
+           L 250,140 
+           L 242,50 
+           L 190,75 
+           L 175,20 
+           L 128,45 
+           L 81,20 
+           L 66,75 
+           L 14,50 
+           L 6,140 
+           L 74,185 Z" 
+        fill="#0b0318" stroke="#ffd700" stroke-width="4" filter="url(#glow-void-boss)" />
+
+  <!-- Inner Dark Matter Reactor -->
+  <circle cx="128" cy="135" r="48" fill="#4a044e" stroke="#f472b6" stroke-width="3" />
+  <circle cx="128" cy="135" r="28" fill="#d946ef" filter="url(#glow-void-boss)" />
+  <circle cx="128" cy="135" r="10" fill="#ffffff" />
+
+  <!-- Golden Imperial Wing Crests -->
+  <g stroke="#facc15" stroke-width="3" fill="none">
+    <path d="M 128,60 L 160,110 L 220,130" />
+    <path d="M 128,60 L 96,110 L 36,130" />
+  </g>
+  <circle cx="220" cy="130" r="6" fill="#f43f5e" filter="url(#glow-void-boss)" />
+  <circle cx="36" cy="130" r="6" fill="#f43f5e" filter="url(#glow-void-boss)" />
+</svg>

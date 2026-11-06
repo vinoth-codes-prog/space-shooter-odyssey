@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- Gradients & Glow Filters -->
+    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="glow-plasma" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- Metallic Hull Gradients -->
+    <linearGradient id="hull-metal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0a1220" />
+      <stop offset="25%" stop-color="#1e2c45" />
+      <stop offset="50%" stop-color="#34496e" />
+      <stop offset="75%" stop-color="#1e2c45" />
+      <stop offset="100%" stop-color="#0a1220" />
+    </linearGradient>
+    <linearGradient id="wing-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#152238" />
+      <stop offset="50%" stop-color="#24344d" />
+      <stop offset="100%" stop-color="#0c1524" />
+    </linearGradient>
+    <linearGradient id="canopy-glass" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="30%" stop-color="#00e5ff" stop-opacity="0.8" />
+      <stop offset="70%" stop-color="#0077b6" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#03071e" stop-opacity="0.95" />
+    </linearGradient>
+    <linearGradient id="plasma-flame" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="20%" stop-color="#00f0ff" />
+      <stop offset="60%" stop-color="#0066ff" />
+      <stop offset="100%" stop-color="rgba(0,102,255,0)" />
+    </linearGradient>
+  </defs>
+
+  <!-- Dual Engine Plasma Thruster Flames -->
+  <g id="thrusters" filter="url(#glow-plasma)">
+    <path d="M 88,185 Q 96,245 96,252 Q 96,245 104,185 Z" fill="url(#plasma-flame)" opacity="0.95" />
+    <path d="M 152,185 Q 160,245 160,252 Q 160,245 168,185 Z" fill="url(#plasma-flame)" opacity="0.95" />
+  </g>
+
+  <!-- Main Fuselage and Swept Wings -->
+  <g id="ship-body">
+    <!-- Wing Contours -->
+    <path d="M 128,16 
+             C 140,40 165,85 195,125 
+             C 215,150 248,172 250,180 
+             C 248,186 230,188 205,182 
+             L 182,165 
+             L 168,188 
+             L 148,184 
+             L 142,192 
+             L 114,192 
+             L 108,184 
+             L 88,188 
+             L 74,165 
+             L 51,182 
+             C 26,188 8,186 6,180 
+             C 8,172 41,150 61,125 
+             C 91,85 116,40 128,16 Z" 
+          fill="url(#wing-metal)" stroke="#00e5ff" stroke-width="2.5" />
+
+    <!-- Center Armor Spine -->
+    <path d="M 128,24 
+             L 144,70 
+             L 152,145 
+             L 142,184 
+             L 114,184 
+             L 104,145 
+             L 112,70 Z" 
+          fill="url(#hull-metal)" stroke="#38bdf8" stroke-width="1.8" />
+
+    <!-- Cyan Energy Conduits / Glow Lines on Wings -->
+    <g filter="url(#glow-cyan)" stroke="#00e5ff" stroke-width="2.5" fill="none">
+      <path d="M 128,50 L 175,115 L 225,160" />
+      <path d="M 128,50 L 81,115 L 31,160" />
+      <path d="M 148,110 L 190,155" />
+      <path d="M 108,110 L 66,155" />
+    </g>
+
+    <!-- Wingtip Heavy Cannon Pods -->
+    <!-- Right Cannon -->
+    <rect x="238" y="140" width="8" height="42" rx="4" fill="#0f172a" stroke="#00e5ff" stroke-width="1.5" />
+    <rect x="240" y="132" width="4" height="12" rx="2" fill="#38bdf8" filter="url(#glow-cyan)" />
+    <!-- Left Cannon -->
+    <rect x="10" y="140" width="8" height="42" rx="4" fill="#0f172a" stroke="#00e5ff" stroke-width="1.5" />
+    <rect x="12" y="132" width="4" height="12" rx="2" fill="#38bdf8" filter="url(#glow-cyan)" />
+
+    <!-- Glass Cockpit Canopy with Specular Glare -->
+    <ellipse cx="128" cy="95" rx="14" ry="38" fill="url(#canopy-glass)" stroke="#38bdf8" stroke-width="2" />
+    <ellipse cx="125" cy="85" rx="6" ry="18" fill="#ffffff" opacity="0.65" />
+
+    <!-- Engine Exhaust Rings -->
+    <ellipse cx="96" cy="186" rx="9" ry="4" fill="#0369a1" stroke="#00e5ff" stroke-width="2" filter="url(#glow-cyan)" />
+    <ellipse cx="160" cy="186" rx="9" ry="4" fill="#0369a1" stroke="#00e5ff" stroke-width="2" filter="url(#glow-cyan)" />
+
+    <!-- Central Fusion Core Beacon -->
+    <circle cx="128" cy="155" r="5" fill="#ffffff" filter="url(#glow-cyan)" />
+  </g>
+</svg>

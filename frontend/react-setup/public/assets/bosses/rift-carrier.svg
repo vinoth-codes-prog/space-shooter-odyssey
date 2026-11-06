@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow-rift" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Massive Dimensional Carrier Mothership -->
+  <path d="M 128,240 
+           L 190,190 
+           L 248,150 
+           L 240,60 
+           L 180,40 
+           L 128,60 
+           L 76,40 
+           L 16,60 
+           L 8,150 
+           L 66,190 Z" 
+        fill="#041f2a" stroke="#00d2d3" stroke-width="4" />
+
+  <!-- Swirling Purple Dimensional Rift Gate -->
+  <circle cx="128" cy="130" r="45" fill="#3b0764" stroke="#c084fc" stroke-width="3" />
+  <ellipse cx="128" cy="130" rx="35" ry="16" fill="#a855f7" filter="url(#glow-rift)" transform="rotate(-40 128 130)" />
+  <ellipse cx="128" cy="130" rx="35" ry="16" fill="#06b6d4" filter="url(#glow-rift)" transform="rotate(40 128 130)" />
+  <circle cx="128" cy="130" r="10" fill="#ffffff" filter="url(#glow-rift)" />
+
+  <!-- Drone Launch Bays -->
+  <rect x="36" y="90" width="28" height="40" rx="4" fill="#083344" stroke="#38bdf8" stroke-width="2" />
+  <rect x="192" y="90" width="28" height="40" rx="4" fill="#083344" stroke="#38bdf8" stroke-width="2" />
+</svg>
